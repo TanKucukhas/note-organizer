@@ -180,7 +180,7 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
           <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
             <div>
               <label className="block text-sm font-medium mb-1">
-                Project Title <span className="text-destructive">*</span>
+                Project Title <span className="text-destructive">*</span> <span className="text-muted-foreground font-normal">(max 100)</span>
               </label>
               <input
                 type="text"
@@ -188,18 +188,20 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Project title"
                 className="w-full px-3 py-2 rounded border bg-background"
+                maxLength={100}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">One Line Intro</label>
+              <label className="block text-sm font-medium mb-1">One Line Intro <span className="text-muted-foreground font-normal">(max 200)</span></label>
               <textarea
                 value={formData.intro || ''}
                 onChange={(e) => setFormData({ ...formData, intro: e.target.value })}
                 placeholder="Brief introduction (2 lines)"
                 rows={2}
                 className="w-full px-3 py-2 rounded border bg-background resize-none"
+                maxLength={200}
               />
             </div>
 
@@ -291,13 +293,14 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Full Description</label>
+              <label className="block text-sm font-medium mb-1">Full Description <span className="text-muted-foreground font-normal">(max 5000)</span></label>
               <textarea
                 value={formData.description || ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Full description (supports markdown)"
                 rows={4}
                 className="w-full px-3 py-2 rounded border bg-background resize-none"
+                maxLength={5000}
               />
             </div>
 

@@ -101,7 +101,7 @@ export function CreateEntityModal({ isOpen, onClose, onCreated, entityType, titl
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">
-              Title <span className="text-destructive">*</span>
+              Title <span className="text-destructive">*</span> <span className="text-muted-foreground font-normal">(max 100)</span>
             </label>
             <input
               type="text"
@@ -109,6 +109,7 @@ export function CreateEntityModal({ isOpen, onClose, onCreated, entityType, titl
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder={entityType === 'project-type' ? 'e.g., Side Project' : 'e.g., Personal'}
               className="w-full px-3 py-2 rounded border bg-background"
+              maxLength={100}
               required
             />
           </div>

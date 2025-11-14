@@ -262,7 +262,7 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
             <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Title <span className="text-destructive">*</span>
+                  Title <span className="text-destructive">*</span> <span className="text-muted-foreground font-normal">(max 100)</span>
                 </label>
                 <input
                   type="text"
@@ -270,19 +270,21 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Note title"
                   className="w-full px-3 py-2 rounded border bg-background"
+                  maxLength={100}
                   required
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Content</label>
+                <label className="block text-sm font-medium mb-1">Content <span className="text-muted-foreground font-normal">(max 2000)</span></label>
                 <textarea
                   value={formData.content || ''}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   placeholder="Note content"
                   rows={4}
                   className="w-full px-3 py-2 rounded border bg-background resize-none"
+                  maxLength={2000}
                 />
               </div>
 
@@ -316,18 +318,19 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
+                <label className="block text-sm font-medium mb-1">Category <span className="text-muted-foreground font-normal">(max 50)</span></label>
                 <input
                   type="text"
                   value={formData.category || ''}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   placeholder="e.g., Personal, Work, Ideas"
                   className="w-full px-3 py-2 rounded border bg-background"
+                  maxLength={50}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Tags</label>
+                <label className="block text-sm font-medium mb-1">Tags <span className="text-muted-foreground font-normal">(max 50 per tag)</span></label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
@@ -336,6 +339,7 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
                     onKeyDown={handleKeyDown}
                     placeholder="Add a tag"
                     className="flex-1 px-3 py-2 rounded border bg-background"
+                    maxLength={50}
                   />
                   <button
                     type="button"

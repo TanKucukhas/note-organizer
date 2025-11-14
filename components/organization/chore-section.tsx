@@ -162,7 +162,7 @@ export function ChoreSection({ noteId, noteModifiedDate }: ChoreSectionProps) {
           <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Title <span className="text-destructive">*</span>
+                  Title <span className="text-destructive">*</span> <span className="text-muted-foreground font-normal">(max 100)</span>
                 </label>
                 <input
                   type="text"
@@ -170,19 +170,21 @@ export function ChoreSection({ noteId, noteModifiedDate }: ChoreSectionProps) {
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Chore title"
                   className="w-full px-3 py-2 rounded border bg-background"
+                  maxLength={100}
                   required
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">Description <span className="text-muted-foreground font-normal">(max 500)</span></label>
                 <textarea
                   value={formData.description || ''}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Chore description"
                   rows={2}
                   className="w-full px-3 py-2 rounded border bg-background resize-none"
+                  maxLength={500}
                 />
               </div>
 
