@@ -1,5 +1,6 @@
 import { getNoteById } from '@/lib/db';
 import { NoteContentViewer } from '@/components/note-content-viewer';
+import { NoteHistoryActions } from '@/components/note-history-actions';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
@@ -15,17 +16,39 @@ export default async function NotePage({
     notFound();
   }
 
+  // Determine if note is in history (analyzed or failed status)
+  const isHistoryNote = note.status === 'analyzed' || note.status === 'failed';
+  const statusLabel = note.status === 'analyzed' ? 'Processed' : note.status === 'failed' ? 'Trashed' : 'Pending';
+  const backLink = isHistoryNote ? '/history' : '/';
+  const backText = isHistoryNote ? 'Back to History' : 'Back to Dashboard';
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card">
         <div className="max-w-5xl mx-auto p-6">
-          <Link
-            href="/"
-            className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block"
-          >
-            ← Back to Dashboard
-          </Link>
+          <div className="flex items-center justify-between mb-4">
+            <Link
+              href={backLink}
+              className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              {backText}
+            </Link>
+
+            {/* Status badge */}
+            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+              note.status === 'analyzed'
+                ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100'
+                : note.status === 'failed'
+                ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100'
+                : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100'
+            }`}>
+              {statusLabel}
+            </div>
+          </div>
           <h1 className="text-3xl font-bold mb-2">
             {note.title || 'Untitled Note'}
           </h1>
@@ -210,6 +233,23 @@ export default async function NotePage({
             </div>
           </dl>
         </div>
+
+        {/* Action buttons (only for history notes) */}
+        {isHistoryNote && (
+          <div className="rounded-lg border bg-card p-6">
+            <h2 className="text-xl font-semibold mb-4">Actions</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {note.status === 'analyzed'
+                ? 'This note has been processed. You can recover it back to the queue or delete it permanently.'
+                : 'This note has been trashed. You can recover it back to the queue or delete it permanently.'}
+            </p>
+            <NoteHistoryActions
+              noteId={note.note_id}
+              noteTitle={note.title}
+              status={note.status as 'analyzed' | 'failed'}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

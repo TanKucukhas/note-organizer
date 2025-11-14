@@ -333,6 +333,15 @@ export function markNoteProcessed(noteId: string): void {
   ).run(noteId);
 }
 
+export function deleteNotePermanently(noteId: string): void {
+  const db = getDatabase();
+
+  // Delete the note (foreign key constraints will cascade to related tables)
+  db.prepare<[string]>(
+    'DELETE FROM notes WHERE note_id = ?'
+  ).run(noteId);
+}
+
 // ============================================================================
 // STATISTICS QUERIES
 // ============================================================================

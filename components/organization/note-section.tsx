@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Note, CreateNoteInput, NoteType, Project, Chore, Task, Idea } from '@/types/organization';
+import { CopyFormPromptButton } from '@/components/copy-form-prompt-button';
+import { EnhancedPasteModal } from '@/components/enhanced-paste-modal';
+import { useFocus } from '@/components/organization/focus-context';
+import type { FormPromptConfig } from '@/lib/form-prompt-generator';
 
 interface NoteSectionProps {
   noteId: string;
@@ -9,6 +13,7 @@ interface NoteSectionProps {
 }
 
 export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
+  const { focusedSection, setFocusedSection } = useFocus();
   const [isExpanded, setIsExpanded] = useState(true);
   const [notes, setNotes] = useState<Note[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -16,6 +21,7 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [showPasteModal, setShowPasteModal] = useState(false);
   const [formData, setFormData] = useState<CreateNoteInput>({
     title: '',
     content: '',
@@ -29,6 +35,8 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
   const [tagInput, setTagInput] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const isFocused = focusedSection === 'notes';
+
   // Fetch existing notes and entities
   useEffect(() => {
     fetchNotes();
@@ -37,6 +45,21 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
     fetchTasks();
     fetchIdeas();
   }, []);
+
+  // Keyboard shortcut for paste
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+        if (isFocused) {
+          e.preventDefault();
+          setShowPasteModal(true);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFocused]);
 
   const fetchNotes = async () => {
     try {
@@ -188,6 +211,86 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
     );
   };
 
+  // Handle delete note
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+
+    try {
+      const response = await fetch(`/api/org-notes/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setNotes(notes.filter(n => n.id !== id));
+      } else {
+        alert('Failed to delete note');
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      alert('Failed to delete note');
+    }
+  };
+
+  // Form prompt configuration for AI
+  const formPromptConfig: FormPromptConfig = useMemo(() => ({
+    formType: 'Note',
+    fields: [
+      {
+        name: 'title',
+        label: 'Title',
+        type: 'text',
+        maxLength: 100,
+        required: true,
+      },
+      {
+        name: 'content',
+        label: 'Content',
+        type: 'textarea',
+        maxLength: 2000,
+      },
+      {
+        name: 'noteType',
+        label: 'Type',
+        type: 'select',
+        options: [
+          { value: 'normal', label: 'Normal' },
+          { value: 'secret', label: 'Secret' },
+        ],
+      },
+      {
+        name: 'category',
+        label: 'Category',
+        type: 'text',
+        maxLength: 50,
+      },
+      {
+        name: 'tags',
+        label: 'Tags',
+        type: 'multiselect',
+        options: [],
+      },
+    ],
+  }), []);
+
+  // Handle pasted AI response
+  const handlePaste = (data: any) => {
+    const updated: CreateNoteInput = {
+      ...formData,
+    };
+
+    if (data.title) updated.title = data.title;
+    if (data.content) updated.content = data.content;
+    if (data.noteType) updated.note_type = data.noteType as NoteType;
+    if (data.category) updated.category = data.category;
+
+    // Handle tags array
+    if (data.tags && Array.isArray(data.tags)) {
+      updated.tags = data.tags;
+    }
+
+    setFormData(updated);
+  };
+
   return (
     <div className="rounded-lg border bg-card">
       {/* Section Header */}
@@ -216,9 +319,18 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
               {notes.map((note) => (
                 <div
                   key={note.id}
-                  className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors"
+                  className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors relative group"
                 >
-                  <div className="flex items-start gap-2">
+                  <button
+                    onClick={() => handleDelete(note.id)}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-destructive"
+                    title="Delete note"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <div className="flex items-start gap-2 pr-6">
                     {note.note_type === 'secret' && (
                       <span className="text-lg" title="Secret note">🔒</span>
                     )}
@@ -259,7 +371,34 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
 
           {/* Create Form */}
           {isCreating && (
-            <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
+            <div
+              className={`space-y-3 transition-all ${isFocused ? 'ring-2 ring-blue-500 rounded-lg p-2' : ''}`}
+              onClick={() => setFocusedSection('notes')}
+            >
+              {/* Form Header with Copy & Paste Buttons */}
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  Create New Note {isFocused && <span className="text-blue-600 text-xs ml-2">● Focused (Cmd+V to paste)</span>}
+                </h4>
+                <div className="flex gap-2">
+                  <CopyFormPromptButton config={formPromptConfig} />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowPasteModal(true);
+                    }}
+                    className="text-sm px-3 py-1.5 rounded border bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span>Paste</span>
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Title <span className="text-destructive">*</span> <span className="text-muted-foreground font-normal">(max 100)</span>
@@ -492,9 +631,19 @@ export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
                 </button>
               </div>
             </form>
+            </div>
           )}
         </div>
       )}
+
+      {/* Enhanced Paste Modal */}
+      <EnhancedPasteModal
+        isOpen={showPasteModal}
+        onClose={() => setShowPasteModal(false)}
+        onApply={handlePaste}
+        config={formPromptConfig}
+        autoReadClipboard={true}
+      />
     </div>
   );
 }

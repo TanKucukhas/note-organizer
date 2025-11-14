@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import type { Project, ProjectType, Group, CreateProjectInput } from '@/types/organization';
 import { CreateEntityModal } from '@/components/create-entity-modal';
 import { CopyFormPromptButton } from '@/components/copy-form-prompt-button';
-import { PasteFormButton } from '@/components/paste-form-button';
+import { EnhancedPasteModal } from '@/components/enhanced-paste-modal';
+import { useFocus } from '@/components/organization/focus-context';
 import type { FormPromptConfig } from '@/lib/form-prompt-generator';
 
 interface ProjectSectionProps {
@@ -13,12 +14,14 @@ interface ProjectSectionProps {
 }
 
 export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps) {
+  const { focusedSection, setFocusedSection } = useFocus();
   const [isExpanded, setIsExpanded] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [showCreateTypeModal, setShowCreateTypeModal] = useState(false);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [showPasteModal, setShowPasteModal] = useState(false);
   const [formData, setFormData] = useState<CreateProjectInput>({
     title: '',
     intro: '',
@@ -30,12 +33,35 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
   });
   const [loading, setLoading] = useState(false);
 
+  const isFocused = focusedSection === 'projects';
+
   // Fetch existing projects, project types, and groups
   useEffect(() => {
     fetchProjects();
     fetchProjectTypes();
     fetchGroups();
   }, []);
+
+  // Keyboard shortcut for paste (Cmd+V / Ctrl+V)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if Cmd+V (Mac) or Ctrl+V (Windows)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        // Don't trigger if user is typing in an input/textarea
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+
+        if (isFocused) {
+          e.preventDefault();
+          setShowPasteModal(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFocused]);
 
   const fetchProjects = async () => {
     try {
@@ -166,6 +192,26 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
     setFormData(updated);
   };
 
+  // Handle delete project
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this project?')) return;
+
+    try {
+      const response = await fetch(`/api/projects/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setProjects(projects.filter(p => p.id !== id));
+      } else {
+        alert('Failed to delete project');
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project');
+    }
+  };
+
   return (
     <div className="rounded-lg border bg-card">
       {/* Section Header */}
@@ -199,9 +245,18 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
                 return (
                   <div
                     key={project.id}
-                    className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors"
+                    className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors relative group"
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-destructive"
+                      title="Delete project"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    <div className="flex items-start justify-between gap-2 pr-6">
                       <h4 className="font-medium flex-1">{project.title}</h4>
                       <div className="flex flex-wrap gap-1.5">
                         {projectGroup && (
@@ -245,13 +300,30 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
           )}
 
           {/* Create Form */}
-          <div className="space-y-3">
+          <div
+            className={`space-y-3 transition-all ${isFocused ? 'ring-2 ring-blue-500 rounded-lg p-2' : ''}`}
+            onClick={() => setFocusedSection('projects')}
+          >
             {/* Form Header with Copy & Paste Buttons */}
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-muted-foreground">Create New Project</h4>
+              <h4 className="text-sm font-medium text-muted-foreground">
+                Create New Project {isFocused && <span className="text-blue-600 text-xs ml-2">● Focused (Cmd+V to paste)</span>}
+              </h4>
               <div className="flex gap-2">
                 <CopyFormPromptButton config={formPromptConfig} />
-                <PasteFormButton config={formPromptConfig} onPaste={handlePaste} />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPasteModal(true);
+                  }}
+                  className="text-sm px-3 py-1.5 rounded border bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <span>Paste</span>
+                </button>
               </div>
             </div>
 
@@ -433,6 +505,15 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
         }}
         entityType="group"
         title="Create Group"
+      />
+
+      {/* Enhanced Paste Modal */}
+      <EnhancedPasteModal
+        isOpen={showPasteModal}
+        onClose={() => setShowPasteModal(false)}
+        onApply={handlePaste}
+        config={formPromptConfig}
+        autoReadClipboard={true}
       />
     </div>
   );

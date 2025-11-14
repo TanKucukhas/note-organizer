@@ -1,6 +1,6 @@
 import { getDatabase } from '@/lib/db';
 import type { Note } from '@/types/note';
-import Link from 'next/link';
+import { HistoryNoteCard } from '@/components/history-note-card';
 
 function getReviewedNotes(): Note[] {
   const db = getDatabase();
@@ -63,16 +63,13 @@ export default function HistoryPage() {
           ) : (
             <div className="space-y-2">
               {reviewedNotes.map((note) => (
-                <Link
+                <HistoryNoteCard
                   key={note.note_id}
-                  href={`/organizer/notes/${note.note_id}`}
-                  className="block rounded-lg border bg-card p-4 hover:bg-accent transition-colors"
-                >
-                  <h3 className="font-semibold mb-1">{note.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Reviewed: {new Date(note.updated_at).toLocaleDateString()}
-                  </p>
-                </Link>
+                  noteId={note.note_id}
+                  title={note.title}
+                  updatedAt={note.updated_at}
+                  status="analyzed"
+                />
               ))}
             </div>
           )}
@@ -91,16 +88,13 @@ export default function HistoryPage() {
           ) : (
             <div className="space-y-2">
               {trashedNotes.map((note) => (
-                <Link
+                <HistoryNoteCard
                   key={note.note_id}
-                  href={`/organizer/notes/${note.note_id}`}
-                  className="block rounded-lg border bg-card p-4 hover:bg-accent transition-colors opacity-60"
-                >
-                  <h3 className="font-semibold mb-1">{note.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Trashed: {new Date(note.updated_at).toLocaleDateString()}
-                  </p>
-                </Link>
+                  noteId={note.note_id}
+                  title={note.title}
+                  updatedAt={note.updated_at}
+                  status="failed"
+                />
               ))}
             </div>
           )}

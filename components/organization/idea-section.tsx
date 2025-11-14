@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { Idea, ProjectType, Group, CreateIdeaInput } from '@/types/organization';
 import { CopyFormPromptButton } from '@/components/copy-form-prompt-button';
-import { PasteFormButton } from '@/components/paste-form-button';
+import { EnhancedPasteModal } from '@/components/enhanced-paste-modal';
+import { useFocus } from '@/components/organization/focus-context';
 import type { FormPromptConfig } from '@/lib/form-prompt-generator';
 
 interface IdeaSectionProps {
@@ -12,10 +13,12 @@ interface IdeaSectionProps {
 }
 
 export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
+  const { focusedSection, setFocusedSection } = useFocus();
   const [isExpanded, setIsExpanded] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [showPasteModal, setShowPasteModal] = useState(false);
   const [formData, setFormData] = useState<CreateIdeaInput>({
     title: '',
     intro: '',
@@ -26,12 +29,31 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
   });
   const [loading, setLoading] = useState(false);
 
+  const isFocused = focusedSection === 'ideas';
+
   // Fetch existing ideas, project types, and groups
   useEffect(() => {
     fetchIdeas();
     fetchProjectTypes();
     fetchGroups();
   }, []);
+
+  // Keyboard shortcut for paste (Cmd+V / Ctrl+V)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        if (isFocused) {
+          e.preventDefault();
+          setShowPasteModal(true);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFocused]);
 
   const fetchProjectTypes = async () => {
     try {
@@ -148,6 +170,26 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
     setFormData(updated);
   };
 
+  // Handle delete idea
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this idea?')) return;
+
+    try {
+      const response = await fetch(`/api/ideas/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setIdeas(ideas.filter(i => i.id !== id));
+      } else {
+        alert('Failed to delete idea');
+      }
+    } catch (error) {
+      console.error('Error deleting idea:', error);
+      alert('Failed to delete idea');
+    }
+  };
+
   return (
     <div className="rounded-lg border bg-card">
       {/* Section Header */}
@@ -181,9 +223,18 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
                 return (
                   <div
                     key={idea.id}
-                    className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors"
+                    className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors relative group"
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <button
+                      onClick={() => handleDelete(idea.id)}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-destructive"
+                      title="Delete idea"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    <div className="flex items-start justify-between gap-2 pr-6">
                       <div className="flex-1">
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <h4 className="font-medium flex-1">{idea.title}</h4>
@@ -230,13 +281,30 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
           )}
 
           {/* Create Form */}
-          <div className="space-y-3">
+          <div
+            className={`space-y-3 transition-all ${isFocused ? 'ring-2 ring-blue-500 rounded-lg p-2' : ''}`}
+            onClick={() => setFocusedSection('ideas')}
+          >
             {/* Form Header with Copy & Paste Buttons */}
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-muted-foreground">Create New Idea</h4>
+              <h4 className="text-sm font-medium text-muted-foreground">
+                Create New Idea {isFocused && <span className="text-blue-600 text-xs ml-2">● Focused (Cmd+V to paste)</span>}
+              </h4>
               <div className="flex gap-2">
                 <CopyFormPromptButton config={formPromptConfig} />
-                <PasteFormButton config={formPromptConfig} onPaste={handlePaste} />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPasteModal(true);
+                  }}
+                  className="text-sm px-3 py-1.5 rounded border bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <span>Paste</span>
+                </button>
               </div>
             </div>
 
@@ -351,6 +419,15 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
           </div>
         </div>
       )}
+
+      {/* Enhanced Paste Modal */}
+      <EnhancedPasteModal
+        isOpen={showPasteModal}
+        onClose={() => setShowPasteModal(false)}
+        onApply={handlePaste}
+        config={formPromptConfig}
+        autoReadClipboard={true}
+      />
     </div>
   );
 }

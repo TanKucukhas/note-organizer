@@ -102,8 +102,6 @@ export function NoteContentViewer({ content, images, noteTitle }: NoteContentVie
       link.style.textDecoration = 'underline';
       link.style.cursor = 'pointer';
       link.style.pointerEvents = 'auto';
-      link.style.position = 'relative';
-      link.style.zIndex = '999';
       link.style.display = 'inline';
 
       // Ensure link is clickable by preventing parent event interference
@@ -158,7 +156,7 @@ export function NoteContentViewer({ content, images, noteTitle }: NoteContentVie
             [&_li]:my-1
             [&_a]:!break-all [&_a]:!text-blue-600 [&_a]:!underline [&_a]:!cursor-pointer
             [&_a]:!pointer-events-auto [&_a]:hover:!text-blue-700 [&_a]:!transition-colors
-            [&_a]:!relative [&_a]:!z-[999] [&_a]:!inline"
+            [&_a]:!inline"
           style={{
             '--tw-prose-body': 'inherit',
           } as any}
