@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Project, ProjectType, Group, CreateProjectInput } from '@/types/organization';
+import { CreateEntityModal } from '@/components/create-entity-modal';
 
 interface ProjectSectionProps {
   noteId: string;
@@ -9,14 +10,18 @@ interface ProjectSectionProps {
 }
 
 export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [showCreateTypeModal, setShowCreateTypeModal] = useState(false);
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [formData, setFormData] = useState<CreateProjectInput>({
     title: '',
     intro: '',
     description: '',
+    status: 'planning',
+    project_type_ids: [],
     source_note_id: noteId,
     source_note_date: noteModifiedDate || undefined,
   });
@@ -80,7 +85,7 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
       if (response.ok) {
         const newProject = await response.json();
         setProjects([newProject, ...projects]);
-        setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
+        setFormData({ title: '', intro: '', description: '', status: 'planning', project_type_ids: [], source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
@@ -119,8 +124,8 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
           {projects.length > 0 && (
             <div className="space-y-2">
               {projects.map((project) => {
-                const projectWithType = project as any;
-                const projectType = projectWithType.project_type;
+                const projectWithTypes = project as any;
+                const projectTypes = projectWithTypes.project_types || [];
                 const projectGroup = project.group_id ? groups.find(g => g.id === project.group_id) : null;
 
                 return (
@@ -130,7 +135,7 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
                   >
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="font-medium flex-1">{project.title}</h4>
-                      <div className="flex gap-1.5">
+                      <div className="flex flex-wrap gap-1.5">
                         {projectGroup && (
                           <span
                             className="px-2 py-1 text-xs rounded-full font-medium text-white"
@@ -139,21 +144,31 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
                             {projectGroup.icon} {projectGroup.name}
                           </span>
                         )}
-                        {projectType && (
+                        {projectTypes.map((type: ProjectType) => (
                           <span
+                            key={type.id}
                             className="px-2 py-1 text-xs rounded-full font-medium text-white"
-                            style={{ backgroundColor: projectType.color || '#6B7280' }}
+                            style={{ backgroundColor: type.color || '#6B7280' }}
                           >
-                            {projectType.icon} {projectType.name}
+                            {type.icon} {type.name}
                           </span>
-                        )}
+                        ))}
                       </div>
                     </div>
                     {project.intro && (
                       <p className="text-sm text-muted-foreground mt-1">{project.intro}</p>
                     )}
-                    <div className="text-xs text-muted-foreground mt-2">
-                      {new Date(project.created_date).toLocaleDateString()}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                      <span>{new Date(project.created_date).toLocaleDateString()}</span>
+                      <span>•</span>
+                      <span className="px-2 py-0.5 rounded bg-secondary">
+                        {project.status === 'planning' && '📋 Planning'}
+                        {project.status === 'actively_working' && '⚡ Actively Working'}
+                        {project.status === 'blocked' && '🚫 Blocked'}
+                        {project.status === 'on_hold' && '⏸️ On Hold'}
+                        {project.status === 'completed' && '✅ Completed'}
+                        {project.status === 'trashed' && '🗑️ Trashed'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -189,23 +204,78 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Project Type</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium">Project Types</label>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateTypeModal(true)}
+                  className="text-xs px-2 py-1 rounded border border-dashed hover:bg-accent"
+                >
+                  + New Type
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {projectTypes.map((type) => {
+                  const isSelected = formData.project_type_ids?.includes(type.id);
+                  return (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => {
+                        const current = formData.project_type_ids || [];
+                        setFormData({
+                          ...formData,
+                          project_type_ids: isSelected
+                            ? current.filter(id => id !== type.id)
+                            : [...current, type.id]
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        isSelected
+                          ? 'text-white shadow-md'
+                          : 'bg-secondary hover:bg-secondary/80'
+                      }`}
+                      style={isSelected ? { backgroundColor: type.color || '#6B7280' } : {}}
+                    >
+                      {type.icon} {type.name}
+                    </button>
+                  );
+                })}
+                {projectTypes.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No project types available. Create one to get started.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Status</label>
               <select
-                value={formData.project_type_id || ''}
-                onChange={(e) => setFormData({ ...formData, project_type_id: e.target.value || undefined })}
+                value={formData.status || 'planning'}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                 className="w-full px-3 py-2 rounded border bg-background"
               >
-                <option value="">Select a type (optional)</option>
-                {projectTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.icon} {type.name}
-                  </option>
-                ))}
+                <option value="planning">📋 Planning</option>
+                <option value="actively_working">⚡ Actively Working</option>
+                <option value="blocked">🚫 Blocked</option>
+                <option value="on_hold">⏸️ On Hold</option>
+                <option value="completed">✅ Completed</option>
+                <option value="trashed">🗑️ Trashed</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Group</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium">Group</label>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateGroupModal(true)}
+                  className="text-xs px-2 py-1 rounded border border-dashed hover:bg-accent"
+                >
+                  + New Group
+                </button>
+              </div>
               <select
                 value={formData.group_id || ''}
                 onChange={(e) => setFormData({ ...formData, group_id: e.target.value || undefined })}
@@ -242,7 +312,7 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
               <button
                 type="button"
                 onClick={() => {
-                  setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
+                  setFormData({ title: '', intro: '', description: '', status: 'planning', project_type_ids: [], source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
                 }}
                 className="px-4 py-2 rounded border hover:bg-accent"
               >
@@ -252,6 +322,36 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
           </form>
         </div>
       )}
+
+      {/* Project Type Creation Modal */}
+      <CreateEntityModal
+        isOpen={showCreateTypeModal}
+        onClose={() => setShowCreateTypeModal(false)}
+        onCreated={(newType) => {
+          setProjectTypes([...projectTypes, newType]);
+          setFormData({
+            ...formData,
+            project_type_ids: [...(formData.project_type_ids || []), newType.id]
+          });
+        }}
+        entityType="project-type"
+        title="Create Project Type"
+      />
+
+      {/* Group Creation Modal */}
+      <CreateEntityModal
+        isOpen={showCreateGroupModal}
+        onClose={() => setShowCreateGroupModal(false)}
+        onCreated={(newGroup) => {
+          setGroups([...groups, newGroup]);
+          setFormData({
+            ...formData,
+            group_id: newGroup.id
+          });
+        }}
+        entityType="group"
+        title="Create Group"
+      />
     </div>
   );
 }

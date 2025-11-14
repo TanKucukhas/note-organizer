@@ -20,6 +20,71 @@ export function NoteContentViewer({ content, images, noteTitle }: NoteContentVie
     const contentDiv = document.getElementById('note-content');
     if (!contentDiv) return;
 
+    // Convert plain text URLs to clickable links
+    const convertTextUrlsToLinks = (element: HTMLElement) => {
+      const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
+
+      const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+
+      const nodesToReplace: Array<{ node: Node; urls: Array<{ url: string; index: number }> }> = [];
+
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const text = node.textContent || '';
+        const matches = [...text.matchAll(urlRegex)];
+
+        if (matches.length > 0 && node.parentElement?.tagName !== 'A') {
+          const urls = matches.map(match => ({
+            url: match[0],
+            index: match.index || 0
+          }));
+          nodesToReplace.push({ node, urls });
+        }
+      }
+
+      // Replace text nodes with links
+      nodesToReplace.forEach(({ node, urls }) => {
+        const text = node.textContent || '';
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+
+        urls.forEach(({ url, index }) => {
+          // Add text before URL
+          if (index > lastIndex) {
+            fragment.appendChild(document.createTextNode(text.substring(lastIndex, index)));
+          }
+
+          // Create link
+          const link = document.createElement('a');
+          link.href = url;
+          link.textContent = url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.style.color = '#2563eb';
+          link.style.textDecoration = 'underline';
+          link.style.cursor = 'pointer';
+          link.style.wordBreak = 'break-all';
+          fragment.appendChild(link);
+
+          lastIndex = index + url.length;
+        });
+
+        // Add remaining text
+        if (lastIndex < text.length) {
+          fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+        }
+
+        node.parentNode?.replaceChild(fragment, node);
+      });
+    };
+
+    // Convert URLs first
+    convertTextUrlsToLinks(contentDiv);
+
     // Handle image clicks for zoom
     const handleImageClick = (e: Event) => {
       const target = e.target as HTMLImageElement;
@@ -37,6 +102,15 @@ export function NoteContentViewer({ content, images, noteTitle }: NoteContentVie
       link.style.textDecoration = 'underline';
       link.style.cursor = 'pointer';
       link.style.pointerEvents = 'auto';
+      link.style.position = 'relative';
+      link.style.zIndex = '999';
+      link.style.display = 'inline';
+
+      // Ensure link is clickable by preventing parent event interference
+      link.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Link will navigate naturally with target="_blank"
+      }, { capture: true });
 
       // Add hover effect
       link.addEventListener('mouseenter', () => {
@@ -75,15 +149,16 @@ export function NoteContentViewer({ content, images, noteTitle }: NoteContentVie
         <h2 className="text-xl font-semibold mb-4">Content</h2>
         <div
           id="note-content"
-          className="prose prose-sm max-w-none overflow-x-hidden break-words
+          className="prose prose-sm max-w-none overflow-x-auto break-words
             [&_img]:rounded-lg [&_img]:border [&_img]:shadow-sm [&_img]:my-4
             [&_img]:max-w-full [&_img]:h-auto [&_img]:object-contain
             [&_img]:cursor-zoom-in [&_img]:hover:opacity-90 [&_img]:transition-opacity
             [&_ul]:list-disc [&_ul]:ml-6
             [&_ol]:list-decimal [&_ol]:ml-6
             [&_li]:my-1
-            [&_a]:break-all [&_a]:text-blue-600 [&_a]:underline [&_a]:cursor-pointer
-            [&_a]:hover:text-blue-700 [&_a]:transition-colors"
+            [&_a]:!break-all [&_a]:!text-blue-600 [&_a]:!underline [&_a]:!cursor-pointer
+            [&_a]:!pointer-events-auto [&_a]:hover:!text-blue-700 [&_a]:!transition-colors
+            [&_a]:!relative [&_a]:!z-[999] [&_a]:!inline"
           style={{
             '--tw-prose-body': 'inherit',
           } as any}

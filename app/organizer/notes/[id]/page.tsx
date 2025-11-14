@@ -50,12 +50,12 @@ export default async function OrganizerNotePage({ params }: PageProps) {
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Panel - Note Viewer */}
-          <div className="overflow-x-hidden">
+          <div className="overflow-x-auto">
             <NoteViewer note={note} />
           </div>
 
           {/* Right Panel - Organization Panel */}
-          <div className="overflow-x-hidden">
+          <div className="overflow-x-auto">
             <OrganizationPanel
               noteId={note.note_id}
               noteTitle={note.title}

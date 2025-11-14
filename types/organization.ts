@@ -71,7 +71,7 @@ export interface Idea {
   updated_at: string;
 }
 
-export type IdeaStatus = 'active' | 'developing' | 'shelved' | 'trashed';
+export type IdeaStatus = 'planning' | 'actively_working' | 'blocked' | 'on_hold' | 'completed' | 'trashed';
 
 export interface IdeaWithDetails extends Idea {
   tags?: string[];
@@ -143,14 +143,14 @@ export interface Project {
   updated_at: string;
 }
 
-export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'trashed';
+export type ProjectStatus = 'planning' | 'actively_working' | 'blocked' | 'on_hold' | 'completed' | 'trashed';
 
 export interface ProjectWithDetails extends Project {
   tags?: string[];
   ideas?: Idea[];
   tasks?: Task[];
   attachments?: FileAttachment[];
-  project_type?: ProjectType;
+  project_types?: ProjectType[];
 }
 
 // ============================================================================
@@ -223,6 +223,13 @@ export interface ProjectTag {
   id: number;
   project_id: string;
   tag: string;
+  created_at: string;
+}
+
+export interface ProjectProjectType {
+  id: number;
+  project_id: string;
+  project_type_id: string;
   created_at: string;
 }
 
@@ -314,7 +321,7 @@ export interface CreateProjectInput {
   description_md?: string;
   status?: ProjectStatus;
   category?: string;
-  project_type_id?: string;
+  project_type_ids?: string[];
   group_id?: string;
   tags?: string[];
   idea_ids?: string[];

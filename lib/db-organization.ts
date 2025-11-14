@@ -452,11 +452,19 @@ export function createProject(input: CreateProjectInput): Project {
     input.description_md || null,
     input.status || 'planning',
     input.category || null,
-    input.project_type_id || null,
+    null, // Keep project_type_id as null for now (legacy column)
     input.group_id || null,
     input.source_note_id || null,
     input.source_note_date || null
   );
+
+  // Add project types if provided (many-to-many)
+  if (input.project_type_ids && input.project_type_ids.length > 0) {
+    const typeStmt = db.prepare('INSERT INTO project_project_types (project_id, project_type_id) VALUES (?, ?)');
+    for (const typeId of input.project_type_ids) {
+      typeStmt.run(id, typeId);
+    }
+  }
 
   // Add tags if provided
   if (input.tags && input.tags.length > 0) {
@@ -478,19 +486,23 @@ export function getAllProjects(): Project[] {
   const db = getOrganizationDatabase();
   const projects = db.prepare<[], Project>('SELECT * FROM projects ORDER BY created_date DESC').all();
 
-  // Fetch project type for each project
+  // Fetch project types for each project (many-to-many)
   return projects.map(project => {
-    if (project.project_type_id) {
-      const projectType = getProjectTypeById(project.project_type_id);
-      return { ...project, project_type: projectType || undefined } as any;
-    }
-    return project;
+    const types = db.prepare<[string], { project_type_id: string }>(`
+      SELECT project_type_id FROM project_project_types WHERE project_id = ?
+    `).all(project.id);
+
+    const projectTypes = types
+      .map(t => getProjectTypeById(t.project_type_id))
+      .filter(Boolean) as ProjectType[];
+
+    return { ...project, project_types: projectTypes } as any;
   });
 }
 
 export function updateProject(input: UpdateProjectInput): Project {
   const db = getOrganizationDatabase();
-  const { id, tags, ...updates } = input;
+  const { id, tags, project_type_ids, ...updates } = input;
 
   const fields: string[] = [];
   const values: any[] = [];
@@ -515,10 +527,6 @@ export function updateProject(input: UpdateProjectInput): Project {
     fields.push('category = ?');
     values.push(updates.category || null);
   }
-  if (updates.project_type_id !== undefined) {
-    fields.push('project_type_id = ?');
-    values.push(updates.project_type_id || null);
-  }
   if (updates.group_id !== undefined) {
     fields.push('group_id = ?');
     values.push(updates.group_id || null);
@@ -528,6 +536,17 @@ export function updateProject(input: UpdateProjectInput): Project {
     fields.push('updated_at = CURRENT_TIMESTAMP');
     values.push(id);
     db.prepare(`UPDATE projects SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  }
+
+  // Update project types if provided (many-to-many)
+  if (project_type_ids !== undefined) {
+    db.prepare('DELETE FROM project_project_types WHERE project_id = ?').run(id);
+    if (project_type_ids.length > 0) {
+      const typeStmt = db.prepare('INSERT INTO project_project_types (project_id, project_type_id) VALUES (?, ?)');
+      for (const typeId of project_type_ids) {
+        typeStmt.run(id, typeId);
+      }
+    }
   }
 
   // Update tags if provided

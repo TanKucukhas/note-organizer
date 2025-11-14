@@ -9,12 +9,11 @@ interface TaskSectionProps {
 }
 
 export function TaskSection({ noteId, noteModifiedDate }: TaskSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<CreateTaskInput>({
     title: '',
     description: '',
@@ -102,7 +101,6 @@ export function TaskSection({ noteId, noteModifiedDate }: TaskSectionProps) {
           source_note_date: noteModifiedDate || undefined,
           status: 'todo',
         });
-        setIsCreating(false);
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
@@ -212,19 +210,8 @@ export function TaskSection({ noteId, noteModifiedDate }: TaskSectionProps) {
             </div>
           )}
 
-          {/* Add New Task Button */}
-          {!isCreating && (
-            <button
-              onClick={() => setIsCreating(true)}
-              className="w-full px-4 py-2 rounded border border-dashed border-muted-foreground/50 hover:border-muted-foreground hover:bg-accent transition-colors text-sm"
-            >
-              + Add New Task
-            </button>
-          )}
-
           {/* Create Form */}
-          {isCreating && (
-            <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
+          <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Title <span className="text-destructive">*</span>
@@ -342,7 +329,6 @@ export function TaskSection({ noteId, noteModifiedDate }: TaskSectionProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    setIsCreating(false);
                     setFormData({
                       title: '',
                       description: '',
@@ -353,11 +339,10 @@ export function TaskSection({ noteId, noteModifiedDate }: TaskSectionProps) {
                   }}
                   className="px-4 py-2 rounded border hover:bg-accent"
                 >
-                  Cancel
+                  Clear
                 </button>
               </div>
             </form>
-          )}
         </div>
       )}
     </div>

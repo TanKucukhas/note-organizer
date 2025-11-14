@@ -9,15 +9,15 @@ interface IdeaSectionProps {
 }
 
 export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<CreateIdeaInput>({
     title: '',
     intro: '',
     description: '',
+    status: 'planning',
     source_note_id: noteId,
     source_note_date: noteModifiedDate || undefined,
   });
@@ -81,8 +81,7 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
       if (response.ok) {
         const newIdea = await response.json();
         setIdeas([newIdea, ...ideas]);
-        setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
-        setIsCreating(false);
+        setFormData({ title: '', intro: '', description: '', status: 'planning', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
@@ -156,8 +155,17 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
                         {idea.intro && (
                           <p className="text-sm text-muted-foreground mt-1">{idea.intro}</p>
                         )}
-                        <div className="text-xs text-muted-foreground mt-2">
-                          {new Date(idea.created_date).toLocaleDateString()} • {idea.status}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                          <span>{new Date(idea.created_date).toLocaleDateString()}</span>
+                          <span>•</span>
+                          <span className="px-2 py-0.5 rounded bg-secondary">
+                            {idea.status === 'planning' && '📋 Planning'}
+                            {idea.status === 'actively_working' && '⚡ Actively Working'}
+                            {idea.status === 'blocked' && '🚫 Blocked'}
+                            {idea.status === 'on_hold' && '⏸️ On Hold'}
+                            {idea.status === 'completed' && '✅ Completed'}
+                            {idea.status === 'trashed' && '🗑️ Trashed'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -167,19 +175,8 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
             </div>
           )}
 
-          {/* Create New Idea Button */}
-          {!isCreating && (
-            <button
-              onClick={() => setIsCreating(true)}
-              className="w-full px-4 py-2 rounded border border-dashed border-muted-foreground/50 hover:border-muted-foreground hover:bg-accent transition-colors text-sm"
-            >
-              + Create New Idea
-            </button>
-          )}
-
           {/* Create Form */}
-          {isCreating && (
-            <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
+          <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Title <span className="text-destructive">*</span>
@@ -228,6 +225,22 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
               </div>
 
               <div>
+                <label className="block text-sm font-medium mb-1">Status</label>
+                <select
+                  value={formData.status || 'planning'}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                >
+                  <option value="planning">📋 Planning</option>
+                  <option value="actively_working">⚡ Actively Working</option>
+                  <option value="blocked">🚫 Blocked</option>
+                  <option value="on_hold">⏸️ On Hold</option>
+                  <option value="completed">✅ Completed</option>
+                  <option value="trashed">🗑️ Trashed</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium mb-1">Intro</label>
                 <input
                   type="text"
@@ -260,16 +273,14 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    setIsCreating(false);
-                    setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
+                    setFormData({ title: '', intro: '', description: '', status: 'planning', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
                   }}
                   className="px-4 py-2 rounded border hover:bg-accent"
                 >
-                  Cancel
+                  Clear
                 </button>
               </div>
             </form>
-          )}
         </div>
       )}
     </div>
