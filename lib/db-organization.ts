@@ -17,6 +17,11 @@ import type {
   CreateProjectTypeInput,
   CreateGroupInput,
   CreateNoteInput,
+  UpdateTaskInput,
+  UpdateChoreInput,
+  UpdateIdeaInput,
+  UpdateProjectInput,
+  UpdateNoteInput,
   OrganizationStats,
   ItemType,
 } from '@/types/organization';
@@ -84,6 +89,63 @@ export function getAllTasks(): Task[] {
   return db.prepare<[], Task>('SELECT * FROM tasks ORDER BY created_date DESC').all();
 }
 
+export function updateTask(input: UpdateTaskInput): Task {
+  const db = getOrganizationDatabase();
+  const { id, ...updates } = input;
+
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  if (updates.title !== undefined) {
+    fields.push('title = ?');
+    values.push(updates.title);
+  }
+  if (updates.description !== undefined) {
+    fields.push('description = ?');
+    values.push(updates.description || null);
+  }
+  if (updates.due_date !== undefined) {
+    fields.push('due_date = ?');
+    values.push(updates.due_date || null);
+  }
+  if (updates.priority !== undefined) {
+    fields.push('priority = ?');
+    values.push(updates.priority || null);
+  }
+  if (updates.status !== undefined) {
+    fields.push('status = ?');
+    values.push(updates.status);
+  }
+  if (updates.project_id !== undefined) {
+    fields.push('project_id = ?');
+    values.push(updates.project_id || null);
+  }
+  if (updates.idea_id !== undefined) {
+    fields.push('idea_id = ?');
+    values.push(updates.idea_id || null);
+  }
+  if (updates.group_id !== undefined) {
+    fields.push('group_id = ?');
+    values.push(updates.group_id || null);
+  }
+
+  if (fields.length === 0) {
+    return getTaskById(id)!;
+  }
+
+  fields.push('updated_at = CURRENT_TIMESTAMP');
+  values.push(id);
+
+  db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+
+  return getTaskById(id)!;
+}
+
+export function deleteTask(id: string): void {
+  const db = getOrganizationDatabase();
+  db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+}
+
 // ============================================================================
 // CHORES
 // ============================================================================
@@ -120,6 +182,55 @@ export function getChoreById(id: string): Chore | null {
 export function getAllChores(): Chore[] {
   const db = getOrganizationDatabase();
   return db.prepare<[], Chore>('SELECT * FROM chores ORDER BY created_date DESC').all();
+}
+
+export function updateChore(input: UpdateChoreInput): Chore {
+  const db = getOrganizationDatabase();
+  const { id, ...updates } = input;
+
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  if (updates.title !== undefined) {
+    fields.push('title = ?');
+    values.push(updates.title);
+  }
+  if (updates.description !== undefined) {
+    fields.push('description = ?');
+    values.push(updates.description || null);
+  }
+  if (updates.is_recurring !== undefined) {
+    fields.push('is_recurring = ?');
+    values.push(updates.is_recurring ? 1 : 0);
+  }
+  if (updates.recurrence_pattern !== undefined) {
+    fields.push('recurrence_pattern = ?');
+    values.push(updates.recurrence_pattern || null);
+  }
+  if (updates.next_due !== undefined) {
+    fields.push('next_due = ?');
+    values.push(updates.next_due || null);
+  }
+  if (updates.group_id !== undefined) {
+    fields.push('group_id = ?');
+    values.push(updates.group_id || null);
+  }
+
+  if (fields.length === 0) {
+    return getChoreById(id)!;
+  }
+
+  fields.push('updated_at = CURRENT_TIMESTAMP');
+  values.push(id);
+
+  db.prepare(`UPDATE chores SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+
+  return getChoreById(id)!;
+}
+
+export function deleteChore(id: string): void {
+  const db = getOrganizationDatabase();
+  db.prepare('DELETE FROM chores WHERE id = ?').run(id);
 }
 
 // ============================================================================
@@ -175,6 +286,69 @@ export function getAllIdeas(): Idea[] {
     }
     return idea;
   });
+}
+
+export function updateIdea(input: UpdateIdeaInput): Idea {
+  const db = getOrganizationDatabase();
+  const { id, tags, ...updates } = input;
+
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  if (updates.title !== undefined) {
+    fields.push('title = ?');
+    values.push(updates.title);
+  }
+  if (updates.intro !== undefined) {
+    fields.push('intro = ?');
+    values.push(updates.intro || null);
+  }
+  if (updates.description_md !== undefined) {
+    fields.push('description_md = ?');
+    values.push(updates.description_md || null);
+  }
+  if (updates.status !== undefined) {
+    fields.push('status = ?');
+    values.push(updates.status);
+  }
+  if (updates.category !== undefined) {
+    fields.push('category = ?');
+    values.push(updates.category || null);
+  }
+  if (updates.idea_type_id !== undefined) {
+    fields.push('idea_type_id = ?');
+    values.push(updates.idea_type_id || null);
+  }
+  if (updates.group_id !== undefined) {
+    fields.push('group_id = ?');
+    values.push(updates.group_id || null);
+  }
+
+  if (fields.length > 0) {
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(id);
+    db.prepare(`UPDATE ideas SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  }
+
+  // Update tags if provided
+  if (tags !== undefined) {
+    db.prepare('DELETE FROM idea_tags WHERE idea_id = ?').run(id);
+    if (tags.length > 0) {
+      const tagStmt = db.prepare('INSERT INTO idea_tags (idea_id, tag) VALUES (?, ?)');
+      for (const tag of tags) {
+        tagStmt.run(id, tag);
+      }
+    }
+  }
+
+  return getIdeaById(id)!;
+}
+
+export function deleteIdea(id: string): void {
+  const db = getOrganizationDatabase();
+  // Delete related tags first (CASCADE should handle this, but being explicit)
+  db.prepare('DELETE FROM idea_tags WHERE idea_id = ?').run(id);
+  db.prepare('DELETE FROM ideas WHERE id = ?').run(id);
 }
 
 // ============================================================================
@@ -314,6 +488,69 @@ export function getAllProjects(): Project[] {
   });
 }
 
+export function updateProject(input: UpdateProjectInput): Project {
+  const db = getOrganizationDatabase();
+  const { id, tags, ...updates } = input;
+
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  if (updates.title !== undefined) {
+    fields.push('title = ?');
+    values.push(updates.title);
+  }
+  if (updates.intro !== undefined) {
+    fields.push('intro = ?');
+    values.push(updates.intro || null);
+  }
+  if (updates.description_md !== undefined) {
+    fields.push('description_md = ?');
+    values.push(updates.description_md || null);
+  }
+  if (updates.status !== undefined) {
+    fields.push('status = ?');
+    values.push(updates.status);
+  }
+  if (updates.category !== undefined) {
+    fields.push('category = ?');
+    values.push(updates.category || null);
+  }
+  if (updates.project_type_id !== undefined) {
+    fields.push('project_type_id = ?');
+    values.push(updates.project_type_id || null);
+  }
+  if (updates.group_id !== undefined) {
+    fields.push('group_id = ?');
+    values.push(updates.group_id || null);
+  }
+
+  if (fields.length > 0) {
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(id);
+    db.prepare(`UPDATE projects SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  }
+
+  // Update tags if provided
+  if (tags !== undefined) {
+    db.prepare('DELETE FROM project_tags WHERE project_id = ?').run(id);
+    if (tags.length > 0) {
+      const tagStmt = db.prepare('INSERT INTO project_tags (project_id, tag) VALUES (?, ?)');
+      for (const tag of tags) {
+        tagStmt.run(id, tag);
+      }
+    }
+  }
+
+  return getProjectById(id)!;
+}
+
+export function deleteProject(id: string): void {
+  const db = getOrganizationDatabase();
+  // Delete related tags first (CASCADE should handle this, but being explicit)
+  db.prepare('DELETE FROM project_tags WHERE project_id = ?').run(id);
+  db.prepare('DELETE FROM projects WHERE id = ?').run(id);
+}
+
 // ============================================================================
 // NOTES
 // ============================================================================
@@ -365,6 +602,71 @@ export function getNoteById(id: string): Note | null {
 export function getAllNotes(): Note[] {
   const db = getOrganizationDatabase();
   return db.prepare<[], Note>('SELECT * FROM notes ORDER BY created_date DESC').all();
+}
+
+export function updateNote(input: UpdateNoteInput): Note {
+  const db = getOrganizationDatabase();
+  const { id, tags, linked_items, ...updates } = input;
+
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  if (updates.title !== undefined) {
+    fields.push('title = ?');
+    values.push(updates.title);
+  }
+  if (updates.content !== undefined) {
+    fields.push('content = ?');
+    values.push(updates.content || null);
+  }
+  if (updates.note_type !== undefined) {
+    fields.push('note_type = ?');
+    values.push(updates.note_type);
+  }
+  if (updates.category !== undefined) {
+    fields.push('category = ?');
+    values.push(updates.category || null);
+  }
+
+  if (fields.length > 0) {
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(id);
+    db.prepare(`UPDATE notes SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  }
+
+  // Update tags if provided
+  if (tags !== undefined) {
+    db.prepare('DELETE FROM note_tags WHERE note_id = ?').run(id);
+    if (tags.length > 0) {
+      const tagStmt = db.prepare('INSERT INTO note_tags (note_id, tag) VALUES (?, ?)');
+      for (const tag of tags) {
+        tagStmt.run(id, tag);
+      }
+    }
+  }
+
+  // Update linked items if provided
+  if (linked_items !== undefined) {
+    db.prepare('DELETE FROM note_links WHERE note_id = ?').run(id);
+    if (linked_items.length > 0) {
+      const linkStmt = db.prepare(
+        'INSERT INTO note_links (note_id, linked_item_type, linked_item_id) VALUES (?, ?, ?)'
+      );
+      for (const link of linked_items) {
+        linkStmt.run(id, link.item_type, link.item_id);
+      }
+    }
+  }
+
+  return getNoteById(id)!;
+}
+
+export function deleteNote(id: string): void {
+  const db = getOrganizationDatabase();
+  // Delete related data first (CASCADE should handle this, but being explicit)
+  db.prepare('DELETE FROM note_tags WHERE note_id = ?').run(id);
+  db.prepare('DELETE FROM note_links WHERE note_id = ?').run(id);
+  db.prepare('DELETE FROM notes WHERE id = ?').run(id);
 }
 
 export function linkNoteToItem(noteId: string, itemType: ItemType, itemId: string): void {

@@ -9,6 +9,7 @@ export function AppHeader() {
   const navItems = [
     { href: '/', label: 'Dashboard', icon: '🏠' },
     { href: '/organize', label: 'Organization DB', icon: '📊' },
+    { href: '/manage', label: 'Manage Items', icon: '⚙️' },
     { href: '/organizer/notes', label: 'Note Organizer', icon: '📝' },
     { href: '/history', label: 'History', icon: '📋' },
   ];

@@ -13,7 +13,6 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<CreateProjectInput>({
     title: '',
     intro: '',
@@ -82,7 +81,6 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
         const newProject = await response.json();
         setProjects([newProject, ...projects]);
         setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
-        setIsCreating(false);
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
@@ -163,109 +161,95 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
             </div>
           )}
 
-          {/* Create New Project Button */}
-          {!isCreating && (
-            <button
-              onClick={() => setIsCreating(true)}
-              className="w-full px-4 py-2 rounded border border-dashed border-muted-foreground/50 hover:border-muted-foreground hover:bg-accent transition-colors text-sm"
-            >
-              + Create New Project
-            </button>
-          )}
-
           {/* Create Form */}
-          {isCreating && (
-            <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Title <span className="text-destructive">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Project title"
-                  className="w-full px-3 py-2 rounded border bg-background"
-                  required
-                  autoFocus
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Project Title <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Project title"
+                className="w-full px-3 py-2 rounded border bg-background"
+                required
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Project Type</label>
-                <select
-                  value={formData.project_type_id || ''}
-                  onChange={(e) => setFormData({ ...formData, project_type_id: e.target.value || undefined })}
-                  className="w-full px-3 py-2 rounded border bg-background"
-                >
-                  <option value="">Select a type (optional)</option>
-                  {projectTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.icon} {type.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">One Line Intro</label>
+              <textarea
+                value={formData.intro || ''}
+                onChange={(e) => setFormData({ ...formData, intro: e.target.value })}
+                placeholder="Brief introduction (2 lines)"
+                rows={2}
+                className="w-full px-3 py-2 rounded border bg-background resize-none"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Group</label>
-                <select
-                  value={formData.group_id || ''}
-                  onChange={(e) => setFormData({ ...formData, group_id: e.target.value || undefined })}
-                  className="w-full px-3 py-2 rounded border bg-background"
-                >
-                  <option value="">Select a group (optional)</option>
-                  {groups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.icon} {group.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Project Type</label>
+              <select
+                value={formData.project_type_id || ''}
+                onChange={(e) => setFormData({ ...formData, project_type_id: e.target.value || undefined })}
+                className="w-full px-3 py-2 rounded border bg-background"
+              >
+                <option value="">Select a type (optional)</option>
+                {projectTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.icon} {type.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Intro</label>
-                <input
-                  type="text"
-                  value={formData.intro || ''}
-                  onChange={(e) => setFormData({ ...formData, intro: e.target.value })}
-                  placeholder="One-line introduction"
-                  className="w-full px-3 py-2 rounded border bg-background"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Group</label>
+              <select
+                value={formData.group_id || ''}
+                onChange={(e) => setFormData({ ...formData, group_id: e.target.value || undefined })}
+                className="w-full px-3 py-2 rounded border bg-background"
+              >
+                <option value="">Select a group (optional)</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.icon} {group.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
-                <textarea
-                  value={formData.description || ''}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Full description (supports markdown)"
-                  rows={3}
-                  className="w-full px-3 py-2 rounded border bg-background resize-none"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Full Description</label>
+              <textarea
+                value={formData.description || ''}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Full description (supports markdown)"
+                rows={4}
+                className="w-full px-3 py-2 rounded border bg-background resize-none"
+              />
+            </div>
 
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={loading || !formData.title.trim()}
-                  className="flex-1 px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Creating...' : 'Create'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreating(false);
-                    setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
-                  }}
-                  className="px-4 py-2 rounded border hover:bg-accent"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={loading || !formData.title.trim()}
+                className="flex-1 px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Creating...' : 'Create Project'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
+                }}
+                className="px-4 py-2 rounded border hover:bg-accent"
+              >
+                Clear
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
