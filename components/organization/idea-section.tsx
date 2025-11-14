@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Idea, CreateIdeaInput } from '@/types/organization';
+import type { Idea, ProjectType, Group, CreateIdeaInput } from '@/types/organization';
 
 interface IdeaSectionProps {
   noteId: string;
@@ -10,6 +10,8 @@ interface IdeaSectionProps {
 export function IdeaSection({ noteId }: IdeaSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<CreateIdeaInput>({
     title: '',
@@ -19,10 +21,36 @@ export function IdeaSection({ noteId }: IdeaSectionProps) {
   });
   const [loading, setLoading] = useState(false);
 
-  // Fetch existing ideas
+  // Fetch existing ideas, project types, and groups
   useEffect(() => {
     fetchIdeas();
+    fetchProjectTypes();
+    fetchGroups();
   }, []);
+
+  const fetchProjectTypes = async () => {
+    try {
+      const response = await fetch('/api/project-types');
+      if (response.ok) {
+        const data = await response.json();
+        setProjectTypes(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch project types:', error);
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch('/api/groups');
+      if (response.ok) {
+        const data = await response.json();
+        setGroups(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch groups:', error);
+    }
+  };
 
   const fetchIdeas = async () => {
     try {
@@ -90,24 +118,50 @@ export function IdeaSection({ noteId }: IdeaSectionProps) {
           {/* Existing Ideas */}
           {ideas.length > 0 && (
             <div className="space-y-2">
-              {ideas.map((idea) => (
-                <div
-                  key={idea.id}
-                  className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{idea.title}</h4>
-                      {idea.intro && (
-                        <p className="text-sm text-muted-foreground mt-1">{idea.intro}</p>
-                      )}
-                      <div className="text-xs text-muted-foreground mt-2">
-                        {new Date(idea.created_date).toLocaleDateString()} • {idea.status}
+              {ideas.map((idea) => {
+                const ideaWithType = idea as any;
+                const ideaType = ideaWithType.idea_type;
+                const ideaGroup = idea.group_id ? groups.find(g => g.id === idea.group_id) : null;
+
+                return (
+                  <div
+                    key={idea.id}
+                    className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h4 className="font-medium flex-1">{idea.title}</h4>
+                          <div className="flex gap-1.5">
+                            {ideaGroup && (
+                              <span
+                                className="px-2 py-1 text-xs rounded-full font-medium text-white"
+                                style={{ backgroundColor: ideaGroup.color || '#6B7280' }}
+                              >
+                                {ideaGroup.icon} {ideaGroup.name}
+                              </span>
+                            )}
+                            {ideaType && (
+                              <span
+                                className="px-2 py-1 text-xs rounded-full font-medium text-white"
+                                style={{ backgroundColor: ideaType.color || '#6B7280' }}
+                              >
+                                {ideaType.icon} {ideaType.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {idea.intro && (
+                          <p className="text-sm text-muted-foreground mt-1">{idea.intro}</p>
+                        )}
+                        <div className="text-xs text-muted-foreground mt-2">
+                          {new Date(idea.created_date).toLocaleDateString()} • {idea.status}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -137,6 +191,38 @@ export function IdeaSection({ noteId }: IdeaSectionProps) {
                   required
                   autoFocus
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Idea Type</label>
+                <select
+                  value={formData.idea_type_id || ''}
+                  onChange={(e) => setFormData({ ...formData, idea_type_id: e.target.value || undefined })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                >
+                  <option value="">Select a type (optional)</option>
+                  {projectTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.icon} {type.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Group</label>
+                <select
+                  value={formData.group_id || ''}
+                  onChange={(e) => setFormData({ ...formData, group_id: e.target.value || undefined })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                >
+                  <option value="">Select a group (optional)</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.icon} {group.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

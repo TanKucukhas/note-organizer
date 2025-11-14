@@ -1,7 +1,10 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+
 interface OrganizerBottomNavProps {
   noteId: string;
+  previousId: string | null;
   nextId: string | null;
   progress: {
     current: number;
@@ -9,7 +12,8 @@ interface OrganizerBottomNavProps {
   };
 }
 
-export function OrganizerBottomNav({ noteId, nextId, progress }: OrganizerBottomNavProps) {
+export function OrganizerBottomNav({ noteId, previousId, nextId, progress }: OrganizerBottomNavProps) {
+  const navRef = useRef<HTMLDivElement>(null);
   const handleTrash = async () => {
     await fetch(`/api/notes/${noteId}/status`, {
       method: 'POST',
@@ -31,6 +35,57 @@ export function OrganizerBottomNav({ noteId, nextId, progress }: OrganizerBottom
       window.location.href = `/organizer/notes/${nextId}`;
     }
   };
+
+  const handleSkip = () => {
+    if (nextId) {
+      window.location.href = `/organizer/notes/${nextId}`;
+    }
+  };
+
+  const handlePrevious = () => {
+    if (previousId) {
+      window.location.href = `/organizer/notes/${previousId}`;
+    }
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if nav is focused or no input is focused
+      const isInputFocused = document.activeElement instanceof HTMLInputElement ||
+                            document.activeElement instanceof HTMLTextAreaElement;
+
+      if (isInputFocused) return;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          handlePrevious();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          handleSkip();
+          break;
+        case ' ':
+          e.preventDefault();
+          handleSkip();
+          break;
+        case 't':
+        case 'T':
+          e.preventDefault();
+          handleTrash();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [noteId, previousId, nextId]);
+
+  // Auto-focus nav on mount
+  useEffect(() => {
+    navRef.current?.focus();
+  }, []);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white shadow-2xl">

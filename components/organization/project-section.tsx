@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Project, CreateProjectInput } from '@/types/organization';
+import type { Project, ProjectType, Group, CreateProjectInput } from '@/types/organization';
 
 interface ProjectSectionProps {
   noteId: string;
@@ -10,6 +10,8 @@ interface ProjectSectionProps {
 export function ProjectSection({ noteId }: ProjectSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<CreateProjectInput>({
     title: '',
@@ -19,9 +21,11 @@ export function ProjectSection({ noteId }: ProjectSectionProps) {
   });
   const [loading, setLoading] = useState(false);
 
-  // Fetch existing projects
+  // Fetch existing projects, project types, and groups
   useEffect(() => {
     fetchProjects();
+    fetchProjectTypes();
+    fetchGroups();
   }, []);
 
   const fetchProjects = async () => {
@@ -33,6 +37,30 @@ export function ProjectSection({ noteId }: ProjectSectionProps) {
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
+    }
+  };
+
+  const fetchProjectTypes = async () => {
+    try {
+      const response = await fetch('/api/project-types');
+      if (response.ok) {
+        const data = await response.json();
+        setProjectTypes(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch project types:', error);
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch('/api/groups');
+      if (response.ok) {
+        const data = await response.json();
+        setGroups(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch groups:', error);
     }
   };
 
@@ -90,20 +118,46 @@ export function ProjectSection({ noteId }: ProjectSectionProps) {
           {/* Existing Projects */}
           {projects.length > 0 && (
             <div className="space-y-2">
-              {projects.map((project) => (
-                <div
-                  key={project.id}
-                  className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors"
-                >
-                  <h4 className="font-medium">{project.title}</h4>
-                  {project.intro && (
-                    <p className="text-sm text-muted-foreground mt-1">{project.intro}</p>
-                  )}
-                  <div className="text-xs text-muted-foreground mt-2">
-                    {new Date(project.created_date).toLocaleDateString()}
+              {projects.map((project) => {
+                const projectWithType = project as any;
+                const projectType = projectWithType.project_type;
+                const projectGroup = project.group_id ? groups.find(g => g.id === project.group_id) : null;
+
+                return (
+                  <div
+                    key={project.id}
+                    className="p-3 rounded border bg-secondary/50 hover:bg-secondary transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-medium flex-1">{project.title}</h4>
+                      <div className="flex gap-1.5">
+                        {projectGroup && (
+                          <span
+                            className="px-2 py-1 text-xs rounded-full font-medium text-white"
+                            style={{ backgroundColor: projectGroup.color || '#6B7280' }}
+                          >
+                            {projectGroup.icon} {projectGroup.name}
+                          </span>
+                        )}
+                        {projectType && (
+                          <span
+                            className="px-2 py-1 text-xs rounded-full font-medium text-white"
+                            style={{ backgroundColor: projectType.color || '#6B7280' }}
+                          >
+                            {projectType.icon} {projectType.name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {project.intro && (
+                      <p className="text-sm text-muted-foreground mt-1">{project.intro}</p>
+                    )}
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {new Date(project.created_date).toLocaleDateString()}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -133,6 +187,38 @@ export function ProjectSection({ noteId }: ProjectSectionProps) {
                   required
                   autoFocus
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Project Type</label>
+                <select
+                  value={formData.project_type_id || ''}
+                  onChange={(e) => setFormData({ ...formData, project_type_id: e.target.value || undefined })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                >
+                  <option value="">Select a type (optional)</option>
+                  {projectTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.icon} {type.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Group</label>
+                <select
+                  value={formData.group_id || ''}
+                  onChange={(e) => setFormData({ ...formData, group_id: e.target.value || undefined })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                >
+                  <option value="">Select a group (optional)</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.icon} {group.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

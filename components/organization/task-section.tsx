@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Task, CreateTaskInput, Project, Idea } from '@/types/organization';
+import type { Task, CreateTaskInput, Project, Idea, Group } from '@/types/organization';
 
 interface TaskSectionProps {
   noteId: string;
@@ -12,6 +12,7 @@ export function TaskSection({ noteId }: TaskSectionProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<CreateTaskInput>({
     title: '',
@@ -26,6 +27,7 @@ export function TaskSection({ noteId }: TaskSectionProps) {
     fetchTasks();
     fetchProjects();
     fetchIdeas();
+    fetchGroups();
   }, []);
 
   const fetchTasks = async () => {
@@ -61,6 +63,18 @@ export function TaskSection({ noteId }: TaskSectionProps) {
       }
     } catch (error) {
       console.error('Failed to fetch ideas:', error);
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch('/api/groups');
+      if (response.ok) {
+        const data = await response.json();
+        setGroups(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch groups:', error);
     }
   };
 
@@ -110,6 +124,12 @@ export function TaskSection({ noteId }: TaskSectionProps) {
     return idea?.title;
   };
 
+  const getGroupName = (groupId: string | null) => {
+    if (!groupId) return null;
+    const group = groups.find(g => g.id === groupId);
+    return group ? { name: group.name, icon: group.icon, color: group.color } : null;
+  };
+
   return (
     <div className="rounded-lg border bg-card">
       {/* Section Header */}
@@ -153,6 +173,14 @@ export function TaskSection({ noteId }: TaskSectionProps) {
                         <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
                       )}
                       <div className="flex flex-wrap gap-2 mt-2">
+                        {getGroupName(task.group_id) && (
+                          <span
+                            className="text-xs px-2 py-0.5 rounded font-medium text-white"
+                            style={{ backgroundColor: getGroupName(task.group_id)?.color || '#6B7280' }}
+                          >
+                            {getGroupName(task.group_id)?.icon} {getGroupName(task.group_id)?.name}
+                          </span>
+                        )}
                         {task.priority && (
                           <span className="text-xs px-2 py-0.5 rounded bg-background">
                             {task.priority}
@@ -282,6 +310,22 @@ export function TaskSection({ noteId }: TaskSectionProps) {
                     Clear project assignment to assign to an idea
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Group</label>
+                <select
+                  value={formData.group_id || ''}
+                  onChange={(e) => setFormData({ ...formData, group_id: e.target.value || undefined })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                >
+                  <option value="">None</option>
+                  {groups.map(group => (
+                    <option key={group.id} value={group.id}>
+                      {group.icon} {group.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex gap-2">

@@ -13,6 +13,7 @@ export interface Task {
   status: TaskStatus;
   project_id: string | null;
   idea_id: string | null;
+  group_id: string | null;
   source_note_id: string | null;
   order_index: number;
   updated_at: string;
@@ -39,6 +40,7 @@ export interface Chore {
   recurrence_pattern: string | null;
   last_completed: string | null;
   next_due: string | null;
+  group_id: string | null;
   source_note_id: string | null;
   order_index: number;
   updated_at: string;
@@ -59,6 +61,8 @@ export interface Idea {
   created_date: string;
   status: IdeaStatus;
   category: string | null;
+  idea_type_id: string | null;
+  group_id: string | null;
   source_note_id: string | null;
   order_index: number;
   updated_at: string;
@@ -70,6 +74,51 @@ export interface IdeaWithDetails extends Idea {
   tags?: string[];
   attachments?: FileAttachment[];
   projects?: Project[]; // Projects this idea is attached to
+  idea_type?: ProjectType;
+}
+
+// ============================================================================
+// GROUPS
+// ============================================================================
+export interface Group {
+  id: string;
+  name: string;
+  color: string | null;
+  icon: string | null;
+  is_default: number;
+  created_at: string;
+}
+
+export interface CreateGroupInput {
+  name: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface UpdateGroupInput extends Partial<CreateGroupInput> {
+  id: string;
+}
+
+// ============================================================================
+// PROJECT TYPES
+// ============================================================================
+export interface ProjectType {
+  id: string;
+  name: string;
+  color: string | null;
+  icon: string | null;
+  is_default: number;
+  created_at: string;
+}
+
+export interface CreateProjectTypeInput {
+  name: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface UpdateProjectTypeInput extends Partial<CreateProjectTypeInput> {
+  id: string;
 }
 
 // ============================================================================
@@ -83,6 +132,8 @@ export interface Project {
   created_date: string;
   status: ProjectStatus;
   category: string | null;
+  project_type_id: string | null;
+  group_id: string | null;
   source_note_id: string | null;
   order_index: number;
   updated_at: string;
@@ -95,6 +146,7 @@ export interface ProjectWithDetails extends Project {
   ideas?: Idea[];
   tasks?: Task[];
   attachments?: FileAttachment[];
+  project_type?: ProjectType;
 }
 
 // ============================================================================
@@ -210,6 +262,7 @@ export interface CreateTaskInput {
   status?: TaskStatus;
   project_id?: string;
   idea_id?: string;
+  group_id?: string;
   source_note_id?: string;
 }
 
@@ -223,6 +276,7 @@ export interface CreateChoreInput {
   is_recurring?: boolean;
   recurrence_pattern?: string;
   next_due?: string;
+  group_id?: string;
   source_note_id?: string;
 }
 
@@ -236,6 +290,8 @@ export interface CreateIdeaInput {
   description_md?: string;
   status?: IdeaStatus;
   category?: string;
+  idea_type_id?: string;
+  group_id?: string;
   tags?: string[];
   source_note_id?: string;
 }
@@ -250,6 +306,8 @@ export interface CreateProjectInput {
   description_md?: string;
   status?: ProjectStatus;
   category?: string;
+  project_type_id?: string;
+  group_id?: string;
   tags?: string[];
   idea_ids?: string[];
   task_ids?: string[];

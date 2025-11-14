@@ -31,19 +31,6 @@ export function OrganizationPanel({ noteId, noteTitle }: OrganizationPanelProps)
         <ChoreSection noteId={noteId} />
         <NoteSection noteId={noteId} />
       </div>
-
-      {/* Mark as Reviewed */}
-      <div className="rounded-lg border bg-card p-6">
-        <button
-          className="w-full px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={() => {
-            // TODO: Implement mark as reviewed functionality
-            alert('Mark as reviewed - to be implemented');
-          }}
-        >
-          Mark as Reviewed & Continue
-        </button>
-      </div>
     </div>
   );
 }

@@ -64,6 +64,7 @@ export default async function OrganizerNotePage({ params }: PageProps) {
       {/* Bottom Navigation Bar - Sticky */}
       <OrganizerBottomNav
         noteId={note.note_id}
+        previousId={previousId}
         nextId={nextId}
         progress={progress}
       />

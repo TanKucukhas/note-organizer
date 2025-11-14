@@ -14,17 +14,20 @@ CREATE TABLE IF NOT EXISTS tasks (
   status TEXT DEFAULT 'todo' CHECK(status IN ('todo', 'in_progress', 'done', 'cancelled')),
   project_id TEXT,
   idea_id TEXT,
+  group_id TEXT,
   source_note_id TEXT,
   order_index INTEGER DEFAULT 0,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
-  FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE SET NULL
+  FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE SET NULL,
+  FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_tasks_due_date ON tasks(due_date);
 CREATE INDEX idx_tasks_project ON tasks(project_id);
 CREATE INDEX idx_tasks_idea ON tasks(idea_id);
+CREATE INDEX idx_tasks_group ON tasks(group_id);
 CREATE INDEX idx_tasks_source ON tasks(source_note_id);
 
 -- ============================================================================
@@ -39,13 +42,16 @@ CREATE TABLE IF NOT EXISTS chores (
   recurrence_pattern TEXT,
   last_completed DATETIME,
   next_due DATETIME,
+  group_id TEXT,
   source_note_id TEXT,
   order_index INTEGER DEFAULT 0,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_chores_recurring ON chores(is_recurring);
 CREATE INDEX idx_chores_next_due ON chores(next_due);
+CREATE INDEX idx_chores_group ON chores(group_id);
 CREATE INDEX idx_chores_source ON chores(source_note_id);
 
 -- ============================================================================
@@ -59,14 +65,65 @@ CREATE TABLE IF NOT EXISTS ideas (
   created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
   status TEXT DEFAULT 'active' CHECK(status IN ('active', 'developing', 'shelved', 'trashed')),
   category TEXT,
+  idea_type_id TEXT,
+  group_id TEXT,
   source_note_id TEXT,
   order_index INTEGER DEFAULT 0,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (idea_type_id) REFERENCES project_types(id) ON DELETE SET NULL,
+  FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_ideas_status ON ideas(status);
 CREATE INDEX idx_ideas_category ON ideas(category);
+CREATE INDEX idx_ideas_type ON ideas(idea_type_id);
+CREATE INDEX idx_ideas_group ON ideas(group_id);
 CREATE INDEX idx_ideas_source ON ideas(source_note_id);
+
+-- ============================================================================
+-- PROJECT TYPES
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS project_types (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  color TEXT,
+  icon TEXT,
+  is_default INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed default project types
+INSERT OR IGNORE INTO project_types (id, name, color, icon, is_default) VALUES
+  ('game', 'Game', '#8B5CF6', '🎮', 1),
+  ('real-estate', 'Real Estate', '#10B981', '🏠', 1),
+  ('fun', 'Fun', '#F59E0B', '🎉', 1),
+  ('youtube', 'Youtube Channel', '#EF4444', '📺', 1),
+  ('productivity', 'Self Productivity', '#3B82F6', '⚡', 1),
+  ('improvement', 'Self Improvement', '#EC4899', '🌱', 1);
+
+CREATE INDEX idx_project_types_name ON project_types(name);
+
+-- ============================================================================
+-- GROUPS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS groups (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  color TEXT,
+  icon TEXT,
+  is_default INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed default groups
+INSERT OR IGNORE INTO groups (id, name, color, icon, is_default) VALUES
+  ('family', 'Family', '#EC4899', '👨‍👩‍👧‍👦', 1),
+  ('daywork', 'Daywork', '#3B82F6', '💼', 1),
+  ('consultance', 'Consultance', '#8B5CF6', '🤝', 1),
+  ('freelance', 'Freelance', '#10B981', '💻', 1),
+  ('self-business', 'Self Business', '#F59E0B', '🚀', 1);
+
+CREATE INDEX idx_groups_name ON groups(name);
 
 -- ============================================================================
 -- PROJECTS
@@ -79,13 +136,19 @@ CREATE TABLE IF NOT EXISTS projects (
   created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
   status TEXT DEFAULT 'active' CHECK(status IN ('planning', 'active', 'on_hold', 'completed', 'trashed')),
   category TEXT,
+  project_type_id TEXT,
+  group_id TEXT,
   source_note_id TEXT,
   order_index INTEGER DEFAULT 0,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_type_id) REFERENCES project_types(id) ON DELETE SET NULL,
+  FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_projects_status ON projects(status);
 CREATE INDEX idx_projects_category ON projects(category);
+CREATE INDEX idx_projects_type ON projects(project_type_id);
+CREATE INDEX idx_projects_group ON projects(group_id);
 CREATE INDEX idx_projects_source ON projects(source_note_id);
 
 -- ============================================================================
