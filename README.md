@@ -5,12 +5,34 @@ A Next.js application to export, organize, and manage your Apple Notes. Transfor
 ## Features
 
 - **Note Viewer**: Browse through all your exported Apple Notes with status badges
+  - 🔗 Automatic URL detection - plain text URLs in content become clickable links
+  - 🖼️ Image gallery with zoom functionality
+  - 📱 Responsive layout with proper link styling
+
 - **Organization System**: Convert notes into structured data:
-  - 📁 Projects - Long-term initiatives with intro, description, and tags
-  - 💡 Ideas - Capture and categorize creative thoughts
-  - ✅ Tasks - Actionable items with due dates and priorities
-  - 🔄 Chores - Recurring tasks with schedules
-  - 📝 Notes - Quick reference notes that can link to multiple items (with secret note support 🔒)
+  - 📁 **Projects** - Long-term initiatives with intro, description, and tags
+    - Status tracking: Planning, Actively Working, Blocked, On Hold, Completed, Trashed
+    - Multiple project types per project (many-to-many relationship)
+    - Group assignment for categorization
+  - 💡 **Ideas** - Capture and categorize creative thoughts
+    - Same status system as projects for consistency
+    - Idea types and group support
+    - Markdown descriptions
+  - ✅ **Tasks** - Actionable items with due dates and priorities
+    - Link to projects or ideas
+    - Priority levels: low, medium, high
+    - Status: todo, in_progress, done, cancelled
+  - 🔄 **Chores** - Recurring tasks with schedules
+    - Recurrence patterns
+    - Next due date tracking
+  - 📝 **Notes** - Quick reference notes that can link to multiple items (with secret note support 🔒)
+
+- **Smart UI Design**:
+  - Creation forms always visible (no "Create New" button required)
+  - Accordions collapsed by default for cleaner interface
+  - Status dropdown in forms for immediate categorization
+  - Reusable modal for creating project types and groups on-the-fly
+
 - **Status Management**: Track notes as Unprocessed, Reviewed, or Trashed
 - **History Tracking**: View all reviewed and trashed notes
 - **Global Navigation**: Easy access to Dashboard, Organization DB, Note Organizer, and History
@@ -104,15 +126,26 @@ sqlite3 organization.db < lib/schema-organization.sql
 - Enables foreign key constraints and WAL mode
 
 **Organization Database Tables:**
-- `projects` - Long-term projects with markdown descriptions
+- `projects` - Long-term projects with markdown descriptions and status tracking
 - `ideas` - Ideas with tags and status tracking
 - `tasks` - Tasks with due dates, priorities, and project links
 - `chores` - Recurring tasks with schedules
 - `notes` - Reference notes with secret/normal types
+- `project_types` - Project type categories (can be assigned to multiple projects)
+- `groups` - Organization groups for categorizing items
+- `project_project_types` - Many-to-many junction for projects and types
 - `note_links` - Many-to-many relationships between notes and other items
 - `file_attachments` - Polymorphic attachments for all item types
 - `project_ideas`, `project_tasks` - Junction tables
 - `idea_tags`, `project_tags`, `note_tags` - Tag tables
+
+**Project & Idea Status Options:**
+- 📋 Planning - Initial planning phase
+- ⚡ Actively Working - Currently in active development
+- 🚫 Blocked - Blocked by dependencies or issues
+- ⏸️ On Hold - Temporarily paused
+- ✅ Completed - Successfully finished
+- 🗑️ Trashed - Discarded or cancelled
 
 ### Step 5: Install Dependencies & Run
 
@@ -199,6 +232,28 @@ npm start
 - notes.json and images/ are excluded from git
 - The application runs on port 3001 by default (if 3000 is in use)
 
+## Database Migrations
+
+The `migrations/` directory contains SQL migration files for updating the organization database schema:
+
+```bash
+# Apply migrations in order (if needed):
+sqlite3 organization.db < migrations/project_types_many_to_many.sql
+sqlite3 organization.db < migrations/update_project_status.sql
+sqlite3 organization.db < migrations/add_completed_on_hold_statuses.sql
+sqlite3 organization.db < migrations/update_idea_status.sql
+sqlite3 organization.db < migrations/add_actively_working_status.sql
+sqlite3 organization.db < migrations/remove_in_progress_status.sql
+```
+
+**Migration History:**
+- `project_types_many_to_many.sql` - Support multiple project types per project
+- `update_project_status.sql` - Update project status options
+- `add_completed_on_hold_statuses.sql` - Add completed and on_hold statuses
+- `update_idea_status.sql` - Sync idea statuses with projects
+- `add_actively_working_status.sql` - Add actively_working status
+- `remove_in_progress_status.sql` - Remove in_progress status (final: 6 statuses)
+
 ## Additional Scripts
 
 ```bash
@@ -207,6 +262,8 @@ python3 split_notes.py
 
 # View database statistics
 sqlite3 notes.db "SELECT status, COUNT(*) FROM notes GROUP BY status"
+sqlite3 organization.db "SELECT status, COUNT(*) FROM projects GROUP BY status"
+sqlite3 organization.db "SELECT status, COUNT(*) FROM ideas GROUP BY status"
 ```
 
 ## License
