@@ -5,9 +5,10 @@ import type { Project, ProjectType, Group, CreateProjectInput } from '@/types/or
 
 interface ProjectSectionProps {
   noteId: string;
+  noteModifiedDate: string | null;
 }
 
-export function ProjectSection({ noteId }: ProjectSectionProps) {
+export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
@@ -18,6 +19,7 @@ export function ProjectSection({ noteId }: ProjectSectionProps) {
     intro: '',
     description: '',
     source_note_id: noteId,
+    source_note_date: noteModifiedDate || undefined,
   });
   const [loading, setLoading] = useState(false);
 
@@ -79,7 +81,7 @@ export function ProjectSection({ noteId }: ProjectSectionProps) {
       if (response.ok) {
         const newProject = await response.json();
         setProjects([newProject, ...projects]);
-        setFormData({ title: '', intro: '', description: '', source_note_id: noteId });
+        setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
         setIsCreating(false);
       } else {
         const error = await response.json();
@@ -255,7 +257,7 @@ export function ProjectSection({ noteId }: ProjectSectionProps) {
                   type="button"
                   onClick={() => {
                     setIsCreating(false);
-                    setFormData({ title: '', intro: '', description: '', source_note_id: noteId });
+                    setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
                   }}
                   className="px-4 py-2 rounded border hover:bg-accent"
                 >

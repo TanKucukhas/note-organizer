@@ -36,7 +36,7 @@ export function OrganizerBottomNav({ noteId, previousId, nextId, progress }: Org
     }
   };
 
-  const handleSkip = () => {
+  const handleNext = () => {
     if (nextId) {
       window.location.href = `/organizer/notes/${nextId}`;
     }
@@ -64,11 +64,11 @@ export function OrganizerBottomNav({ noteId, previousId, nextId, progress }: Org
           break;
         case 'ArrowRight':
           e.preventDefault();
-          handleSkip();
+          handleNext();
           break;
         case ' ':
           e.preventDefault();
-          handleSkip();
+          handleReviewed();
           break;
         case 't':
         case 'T':
@@ -88,10 +88,38 @@ export function OrganizerBottomNav({ noteId, previousId, nextId, progress }: Org
   }, []);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white shadow-2xl">
+    <div
+      ref={navRef}
+      tabIndex={0}
+      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white shadow-2xl outline-none"
+    >
       <div className="container mx-auto px-4 py-5">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1">
+          <div className="flex items-center gap-3 flex-1">
+            {/* Navigation Buttons */}
+            <div className="flex gap-2">
+              {/* Previous Button */}
+              <button
+                onClick={handlePrevious}
+                disabled={!previousId}
+                className="px-3 sm:px-4 py-3 rounded-lg bg-gray-600 text-white font-semibold hover:bg-gray-700 transition-colors shadow-md text-xs sm:text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="hidden sm:inline">← </span>Prev
+                <span className="text-[10px] block mt-0.5 normal-case opacity-75">←</span>
+              </button>
+
+              {/* Next Button */}
+              <button
+                onClick={handleNext}
+                disabled={!nextId}
+                className="px-3 sm:px-4 py-3 rounded-lg bg-gray-600 text-white font-semibold hover:bg-gray-700 transition-colors shadow-md text-xs sm:text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="hidden sm:inline">→ </span>Next
+                <span className="text-[10px] block mt-0.5 normal-case opacity-75">→</span>
+              </button>
+            </div>
+
+            {/* Progress */}
             <p className="text-sm font-medium text-gray-700">
               {progress.current} / {progress.total}
             </p>
@@ -103,27 +131,22 @@ export function OrganizerBottomNav({ noteId, previousId, nextId, progress }: Org
             </div>
           </div>
           <div className="flex gap-2 sm:gap-3">
+            {/* Trash Button */}
             <button
               onClick={handleTrash}
               className="px-4 sm:px-6 py-3 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors shadow-md text-xs sm:text-sm uppercase tracking-wide"
             >
               <span className="hidden sm:inline">🗑️ </span>Trash
+              <span className="text-[10px] block mt-0.5 normal-case opacity-75">T</span>
             </button>
 
-            {nextId && (
-              <a
-                href={`/organizer/notes/${nextId}`}
-                className="px-4 sm:px-6 py-3 rounded-lg bg-gray-600 text-white font-semibold hover:bg-gray-700 transition-colors shadow-md text-xs sm:text-sm uppercase tracking-wide"
-              >
-                Skip <span className="hidden sm:inline">→</span>
-              </a>
-            )}
-
+            {/* Reviewed Button */}
             <button
               onClick={handleReviewed}
               className="px-4 sm:px-6 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors shadow-md text-xs sm:text-sm uppercase tracking-wide"
             >
               <span className="hidden sm:inline">✓ </span>Reviewed
+              <span className="text-[10px] block mt-0.5 normal-case opacity-75">Space</span>
             </button>
           </div>
         </div>

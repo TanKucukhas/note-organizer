@@ -10,9 +10,10 @@ import { NoteSection } from './organization/note-section';
 interface OrganizationPanelProps {
   noteId: string;
   noteTitle: string;
+  noteModifiedDate: string | null;
 }
 
-export function OrganizationPanel({ noteId, noteTitle }: OrganizationPanelProps) {
+export function OrganizationPanel({ noteId, noteTitle, noteModifiedDate }: OrganizationPanelProps) {
   return (
     <div className="space-y-6">
       {/* Panel Header */}
@@ -25,11 +26,11 @@ export function OrganizationPanel({ noteId, noteTitle }: OrganizationPanelProps)
 
       {/* Organization Sections */}
       <div className="space-y-4">
-        <ProjectSection noteId={noteId} />
-        <IdeaSection noteId={noteId} />
-        <TaskSection noteId={noteId} />
-        <ChoreSection noteId={noteId} />
-        <NoteSection noteId={noteId} />
+        <ProjectSection noteId={noteId} noteModifiedDate={noteModifiedDate} />
+        <IdeaSection noteId={noteId} noteModifiedDate={noteModifiedDate} />
+        <TaskSection noteId={noteId} noteModifiedDate={noteModifiedDate} />
+        <ChoreSection noteId={noteId} noteModifiedDate={noteModifiedDate} />
+        <NoteSection noteId={noteId} noteModifiedDate={noteModifiedDate} />
       </div>
     </div>
   );

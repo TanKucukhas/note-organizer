@@ -15,6 +15,7 @@ export interface Task {
   idea_id: string | null;
   group_id: string | null;
   source_note_id: string | null;
+  source_note_date: string | null;
   order_index: number;
   updated_at: string;
 }
@@ -42,6 +43,7 @@ export interface Chore {
   next_due: string | null;
   group_id: string | null;
   source_note_id: string | null;
+  source_note_date: string | null;
   order_index: number;
   updated_at: string;
 }
@@ -64,6 +66,7 @@ export interface Idea {
   idea_type_id: string | null;
   group_id: string | null;
   source_note_id: string | null;
+  source_note_date: string | null;
   order_index: number;
   updated_at: string;
 }
@@ -135,6 +138,7 @@ export interface Project {
   project_type_id: string | null;
   group_id: string | null;
   source_note_id: string | null;
+  source_note_date: string | null;
   order_index: number;
   updated_at: string;
 }
@@ -159,6 +163,7 @@ export interface Note {
   note_type: NoteType;
   category: string | null;
   source_note_id: string | null;
+  source_note_date: string | null;
   order_index: number;
   created_date: string;
   updated_at: string;
@@ -264,6 +269,7 @@ export interface CreateTaskInput {
   idea_id?: string;
   group_id?: string;
   source_note_id?: string;
+  source_note_date?: string;
 }
 
 export interface UpdateTaskInput extends Partial<CreateTaskInput> {
@@ -278,6 +284,7 @@ export interface CreateChoreInput {
   next_due?: string;
   group_id?: string;
   source_note_id?: string;
+  source_note_date?: string;
 }
 
 export interface UpdateChoreInput extends Partial<CreateChoreInput> {
@@ -294,6 +301,7 @@ export interface CreateIdeaInput {
   group_id?: string;
   tags?: string[];
   source_note_id?: string;
+  source_note_date?: string;
 }
 
 export interface UpdateIdeaInput extends Partial<CreateIdeaInput> {
@@ -312,6 +320,7 @@ export interface CreateProjectInput {
   idea_ids?: string[];
   task_ids?: string[];
   source_note_id?: string;
+  source_note_date?: string;
 }
 
 export interface UpdateProjectInput extends Partial<CreateProjectInput> {
@@ -329,6 +338,7 @@ export interface CreateNoteInput {
     item_id: string;
   }>;
   source_note_id?: string;
+  source_note_date?: string;
 }
 
 export interface UpdateNoteInput extends Partial<CreateNoteInput> {

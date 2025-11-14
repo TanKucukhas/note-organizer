@@ -5,9 +5,10 @@ import type { Chore, Group, CreateChoreInput } from '@/types/organization';
 
 interface ChoreSectionProps {
   noteId: string;
+  noteModifiedDate: string | null;
 }
 
-export function ChoreSection({ noteId }: ChoreSectionProps) {
+export function ChoreSection({ noteId, noteModifiedDate }: ChoreSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [chores, setChores] = useState<Chore[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -16,6 +17,7 @@ export function ChoreSection({ noteId }: ChoreSectionProps) {
     title: '',
     description: '',
     source_note_id: noteId,
+    source_note_date: noteModifiedDate || undefined,
     is_recurring: false,
   });
   const [loading, setLoading] = useState(false);
@@ -69,6 +71,7 @@ export function ChoreSection({ noteId }: ChoreSectionProps) {
           title: '',
           description: '',
           source_note_id: noteId,
+          source_note_date: noteModifiedDate || undefined,
           is_recurring: false,
         });
         setIsCreating(false);
@@ -258,6 +261,7 @@ export function ChoreSection({ noteId }: ChoreSectionProps) {
                       title: '',
                       description: '',
                       source_note_id: noteId,
+                      source_note_date: noteModifiedDate || undefined,
                       is_recurring: false,
                     });
                   }}

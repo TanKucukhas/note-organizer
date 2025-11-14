@@ -56,7 +56,11 @@ export default async function OrganizerNotePage({ params }: PageProps) {
 
           {/* Right Panel - Organization Panel */}
           <div className="overflow-x-hidden">
-            <OrganizationPanel noteId={note.note_id} noteTitle={note.title} />
+            <OrganizationPanel
+              noteId={note.note_id}
+              noteTitle={note.title}
+              noteModifiedDate={note.modified_datetime}
+            />
           </div>
         </div>
       </div>

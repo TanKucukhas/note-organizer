@@ -28,13 +28,23 @@ export function NoteContentViewer({ content, images, noteTitle }: NoteContentVie
       }
     };
 
-    // Make all links in content open in new tab
+    // Make all links in content open in new tab and clearly clickable
     const links = contentDiv.querySelectorAll('a');
     links.forEach(link => {
       link.setAttribute('target', '_blank');
       link.setAttribute('rel', 'noopener noreferrer');
       link.style.color = '#2563eb'; // blue-600
       link.style.textDecoration = 'underline';
+      link.style.cursor = 'pointer';
+      link.style.pointerEvents = 'auto';
+
+      // Add hover effect
+      link.addEventListener('mouseenter', () => {
+        link.style.color = '#1d4ed8'; // blue-700
+      });
+      link.addEventListener('mouseleave', () => {
+        link.style.color = '#2563eb'; // blue-600
+      });
     });
 
     contentDiv.addEventListener('click', handleImageClick);
@@ -72,7 +82,8 @@ export function NoteContentViewer({ content, images, noteTitle }: NoteContentVie
             [&_ul]:list-disc [&_ul]:ml-6
             [&_ol]:list-decimal [&_ol]:ml-6
             [&_li]:my-1
-            [&_a]:break-all"
+            [&_a]:break-all [&_a]:text-blue-600 [&_a]:underline [&_a]:cursor-pointer
+            [&_a]:hover:text-blue-700 [&_a]:transition-colors"
           style={{
             '--tw-prose-body': 'inherit',
           } as any}

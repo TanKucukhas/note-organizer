@@ -1,15 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Note, CreateNoteInput, NoteType } from '@/types/organization';
+import type { Note, CreateNoteInput, NoteType, Project, Chore, Task, Idea } from '@/types/organization';
 
 interface NoteSectionProps {
   noteId: string;
+  noteModifiedDate: string | null;
 }
 
-export function NoteSection({ noteId }: NoteSectionProps) {
+export function NoteSection({ noteId, noteModifiedDate }: NoteSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [chores, setChores] = useState<Chore[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<CreateNoteInput>({
     title: '',
@@ -17,14 +22,20 @@ export function NoteSection({ noteId }: NoteSectionProps) {
     note_type: 'normal',
     category: '',
     tags: [],
+    linked_items: [],
     source_note_id: noteId,
+    source_note_date: noteModifiedDate || undefined,
   });
   const [tagInput, setTagInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Fetch existing notes
+  // Fetch existing notes and entities
   useEffect(() => {
     fetchNotes();
+    fetchProjects();
+    fetchChores();
+    fetchTasks();
+    fetchIdeas();
   }, []);
 
   const fetchNotes = async () => {
@@ -36,6 +47,54 @@ export function NoteSection({ noteId }: NoteSectionProps) {
       }
     } catch (error) {
       console.error('Failed to fetch notes:', error);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch('/api/projects');
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+    }
+  };
+
+  const fetchChores = async () => {
+    try {
+      const response = await fetch('/api/chores');
+      if (response.ok) {
+        const data = await response.json();
+        setChores(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch chores:', error);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks');
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tasks:', error);
+    }
+  };
+
+  const fetchIdeas = async () => {
+    try {
+      const response = await fetch('/api/ideas');
+      if (response.ok) {
+        const data = await response.json();
+        setIdeas(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch ideas:', error);
     }
   };
 
@@ -60,7 +119,9 @@ export function NoteSection({ noteId }: NoteSectionProps) {
           note_type: 'normal',
           category: '',
           tags: [],
-          source_note_id: noteId
+          linked_items: [],
+          source_note_id: noteId,
+          source_note_date: noteModifiedDate || undefined
         });
         setTagInput('');
         setIsCreating(false);
@@ -98,6 +159,33 @@ export function NoteSection({ noteId }: NoteSectionProps) {
       e.preventDefault();
       handleAddTag();
     }
+  };
+
+  const handleToggleLinkedItem = (itemType: 'project' | 'chore' | 'task' | 'idea', itemId: string) => {
+    const linkedItems = formData.linked_items || [];
+    const existingIndex = linkedItems.findIndex(
+      item => item.item_type === itemType && item.item_id === itemId
+    );
+
+    if (existingIndex >= 0) {
+      // Remove if exists
+      setFormData({
+        ...formData,
+        linked_items: linkedItems.filter((_, index) => index !== existingIndex),
+      });
+    } else {
+      // Add if doesn't exist
+      setFormData({
+        ...formData,
+        linked_items: [...linkedItems, { item_type: itemType, item_id: itemId }],
+      });
+    }
+  };
+
+  const isLinked = (itemType: 'project' | 'chore' | 'task' | 'idea', itemId: string) => {
+    return (formData.linked_items || []).some(
+      item => item.item_type === itemType && item.item_id === itemId
+    );
   };
 
   return (
@@ -278,6 +366,98 @@ export function NoteSection({ noteId }: NoteSectionProps) {
                 )}
               </div>
 
+              {/* Link to Projects, Chores, Tasks, Ideas */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Link to Items</label>
+                <div className="space-y-3 max-h-64 overflow-y-auto border rounded p-3 bg-background/50">
+                  {/* Projects */}
+                  {projects.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground mb-2">📁 Projects</h4>
+                      <div className="space-y-1">
+                        {projects.map((project) => (
+                          <label key={project.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent px-2 py-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={isLinked('project', project.id)}
+                              onChange={() => handleToggleLinkedItem('project', project.id)}
+                              className="rounded"
+                            />
+                            <span className="text-sm">{project.title}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Chores */}
+                  {chores.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground mb-2">🏠 Chores</h4>
+                      <div className="space-y-1">
+                        {chores.map((chore) => (
+                          <label key={chore.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent px-2 py-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={isLinked('chore', chore.id)}
+                              onChange={() => handleToggleLinkedItem('chore', chore.id)}
+                              className="rounded"
+                            />
+                            <span className="text-sm">{chore.title}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tasks */}
+                  {tasks.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground mb-2">✓ Tasks</h4>
+                      <div className="space-y-1">
+                        {tasks.map((task) => (
+                          <label key={task.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent px-2 py-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={isLinked('task', task.id)}
+                              onChange={() => handleToggleLinkedItem('task', task.id)}
+                              className="rounded"
+                            />
+                            <span className="text-sm">{task.title}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ideas */}
+                  {ideas.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground mb-2">💡 Ideas</h4>
+                      <div className="space-y-1">
+                        {ideas.map((idea) => (
+                          <label key={idea.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent px-2 py-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={isLinked('idea', idea.id)}
+                              onChange={() => handleToggleLinkedItem('idea', idea.id)}
+                              className="rounded"
+                            />
+                            <span className="text-sm">{idea.title}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {projects.length === 0 && chores.length === 0 && tasks.length === 0 && ideas.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No items available to link
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-2">
                 <button
                   type="submit"
@@ -296,7 +476,9 @@ export function NoteSection({ noteId }: NoteSectionProps) {
                       note_type: 'normal',
                       category: '',
                       tags: [],
-                      source_note_id: noteId
+                      linked_items: [],
+                      source_note_id: noteId,
+                      source_note_date: noteModifiedDate || undefined
                     });
                     setTagInput('');
                   }}

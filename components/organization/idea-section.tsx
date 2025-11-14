@@ -5,9 +5,10 @@ import type { Idea, ProjectType, Group, CreateIdeaInput } from '@/types/organiza
 
 interface IdeaSectionProps {
   noteId: string;
+  noteModifiedDate: string | null;
 }
 
-export function IdeaSection({ noteId }: IdeaSectionProps) {
+export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
@@ -18,6 +19,7 @@ export function IdeaSection({ noteId }: IdeaSectionProps) {
     intro: '',
     description: '',
     source_note_id: noteId,
+    source_note_date: noteModifiedDate || undefined,
   });
   const [loading, setLoading] = useState(false);
 
@@ -79,7 +81,7 @@ export function IdeaSection({ noteId }: IdeaSectionProps) {
       if (response.ok) {
         const newIdea = await response.json();
         setIdeas([newIdea, ...ideas]);
-        setFormData({ title: '', intro: '', description: '', source_note_id: noteId });
+        setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
         setIsCreating(false);
       } else {
         const error = await response.json();
@@ -259,7 +261,7 @@ export function IdeaSection({ noteId }: IdeaSectionProps) {
                   type="button"
                   onClick={() => {
                     setIsCreating(false);
-                    setFormData({ title: '', intro: '', description: '', source_note_id: noteId });
+                    setFormData({ title: '', intro: '', description: '', source_note_id: noteId, source_note_date: noteModifiedDate || undefined });
                   }}
                   className="px-4 py-2 rounded border hover:bg-accent"
                 >

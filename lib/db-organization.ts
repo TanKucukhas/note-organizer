@@ -55,8 +55,8 @@ export function createTask(input: CreateTaskInput): Task {
   db.prepare(`
     INSERT INTO tasks (
       id, title, description, due_date, priority, status,
-      project_id, idea_id, group_id, source_note_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      project_id, idea_id, group_id, source_note_id, source_note_date
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     input.title,
@@ -67,7 +67,8 @@ export function createTask(input: CreateTaskInput): Task {
     input.project_id || null,
     input.idea_id || null,
     input.group_id || null,
-    input.source_note_id || null
+    input.source_note_id || null,
+    input.source_note_date || null
   );
 
   return getTaskById(id)!;
@@ -94,8 +95,8 @@ export function createChore(input: CreateChoreInput): Chore {
   db.prepare(`
     INSERT INTO chores (
       id, title, description, is_recurring, recurrence_pattern,
-      next_due, group_id, source_note_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      next_due, group_id, source_note_id, source_note_date
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     input.title,
@@ -104,7 +105,8 @@ export function createChore(input: CreateChoreInput): Chore {
     input.recurrence_pattern || null,
     input.next_due || null,
     input.group_id || null,
-    input.source_note_id || null
+    input.source_note_id || null,
+    input.source_note_date || null
   );
 
   return getChoreById(id)!;
@@ -130,8 +132,8 @@ export function createIdea(input: CreateIdeaInput): Idea {
 
   db.prepare(`
     INSERT INTO ideas (
-      id, title, intro, description_md, status, category, idea_type_id, group_id, source_note_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      id, title, intro, description_md, status, category, idea_type_id, group_id, source_note_id, source_note_date
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     input.title,
@@ -141,7 +143,8 @@ export function createIdea(input: CreateIdeaInput): Idea {
     input.category || null,
     input.idea_type_id || null,
     input.group_id || null,
-    input.source_note_id || null
+    input.source_note_id || null,
+    input.source_note_date || null
   );
 
   // Add tags if provided
@@ -266,8 +269,8 @@ export function createProject(input: CreateProjectInput): Project {
 
   db.prepare(`
     INSERT INTO projects (
-      id, title, intro, description_md, status, category, project_type_id, group_id, source_note_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      id, title, intro, description_md, status, category, project_type_id, group_id, source_note_id, source_note_date
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     input.title,
@@ -277,7 +280,8 @@ export function createProject(input: CreateProjectInput): Project {
     input.category || null,
     input.project_type_id || null,
     input.group_id || null,
-    input.source_note_id || null
+    input.source_note_id || null,
+    input.source_note_date || null
   );
 
   // Add tags if provided
@@ -320,15 +324,16 @@ export function createNote(input: CreateNoteInput): Note {
 
   db.prepare(`
     INSERT INTO notes (
-      id, title, content, note_type, category, source_note_id
-    ) VALUES (?, ?, ?, ?, ?, ?)
+      id, title, content, note_type, category, source_note_id, source_note_date
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     input.title,
     input.content || null,
     input.note_type || 'normal',
     input.category || null,
-    input.source_note_id || null
+    input.source_note_id || null,
+    input.source_note_date || null
   );
 
   // Add tags if provided

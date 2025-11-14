@@ -5,9 +5,10 @@ import type { Task, CreateTaskInput, Project, Idea, Group } from '@/types/organi
 
 interface TaskSectionProps {
   noteId: string;
+  noteModifiedDate: string | null;
 }
 
-export function TaskSection({ noteId }: TaskSectionProps) {
+export function TaskSection({ noteId, noteModifiedDate }: TaskSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -18,6 +19,7 @@ export function TaskSection({ noteId }: TaskSectionProps) {
     title: '',
     description: '',
     source_note_id: noteId,
+    source_note_date: noteModifiedDate || undefined,
     status: 'todo',
   });
   const [loading, setLoading] = useState(false);
@@ -97,6 +99,7 @@ export function TaskSection({ noteId }: TaskSectionProps) {
           title: '',
           description: '',
           source_note_id: noteId,
+          source_note_date: noteModifiedDate || undefined,
           status: 'todo',
         });
         setIsCreating(false);
@@ -344,6 +347,7 @@ export function TaskSection({ noteId }: TaskSectionProps) {
                       title: '',
                       description: '',
                       source_note_id: noteId,
+                      source_note_date: noteModifiedDate || undefined,
                       status: 'todo',
                     });
                   }}
