@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Idea, ProjectType, Group, CreateIdeaInput } from '@/types/organization';
+import { CopyFormPromptButton } from '@/components/copy-form-prompt-button';
+import { PasteFormButton } from '@/components/paste-form-button';
+import type { FormPromptConfig } from '@/lib/form-prompt-generator';
 
 interface IdeaSectionProps {
   noteId: string;
@@ -94,6 +97,57 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
     }
   };
 
+  // Form prompt configuration for AI
+  const formPromptConfig: FormPromptConfig = useMemo(() => ({
+    formType: 'Idea',
+    fields: [
+      {
+        name: 'title',
+        label: 'Title',
+        type: 'text',
+        maxLength: 100,
+        required: true,
+      },
+      {
+        name: 'intro',
+        label: 'Intro',
+        type: 'text',
+        maxLength: 200,
+      },
+      {
+        name: 'ideaType',
+        label: 'Idea Type',
+        type: 'select',
+        options: projectTypes.map(type => ({ value: type.id, label: type.name })),
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
+        maxLength: 5000,
+      },
+    ],
+  }), [projectTypes]);
+
+  // Handle pasted AI response
+  const handlePaste = (data: any) => {
+    const updated: CreateIdeaInput = {
+      ...formData,
+    };
+
+    if (data.title) updated.title = data.title;
+    if (data.intro) updated.intro = data.intro;
+    if (data.description) updated.description = data.description;
+
+    // Handle idea type (map name to ID)
+    if (data.ideaType) {
+      const type = projectTypes.find(t => t.name === data.ideaType);
+      if (type) updated.idea_type_id = type.id;
+    }
+
+    setFormData(updated);
+  };
+
   return (
     <div className="rounded-lg border bg-card">
       {/* Section Header */}
@@ -176,7 +230,17 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
           )}
 
           {/* Create Form */}
-          <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
+          <div className="space-y-3">
+            {/* Form Header with Copy & Paste Buttons */}
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-muted-foreground">Create New Idea</h4>
+              <div className="flex gap-2">
+                <CopyFormPromptButton config={formPromptConfig} />
+                <PasteFormButton config={formPromptConfig} onPaste={handlePaste} />
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Title <span className="text-destructive">*</span> <span className="text-muted-foreground font-normal">(max 100)</span>
@@ -284,6 +348,7 @@ export function IdeaSection({ noteId, noteModifiedDate }: IdeaSectionProps) {
                 </button>
               </div>
             </form>
+          </div>
         </div>
       )}
     </div>

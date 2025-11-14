@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Project, ProjectType, Group, CreateProjectInput } from '@/types/organization';
 import { CreateEntityModal } from '@/components/create-entity-modal';
+import { CopyFormPromptButton } from '@/components/copy-form-prompt-button';
+import { PasteFormButton } from '@/components/paste-form-button';
+import type { FormPromptConfig } from '@/lib/form-prompt-generator';
 
 interface ProjectSectionProps {
   noteId: string;
@@ -98,6 +101,71 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
     }
   };
 
+  // Form prompt configuration for AI
+  const formPromptConfig: FormPromptConfig = useMemo(() => ({
+    formType: 'Project',
+    fields: [
+      {
+        name: 'projectTitle',
+        label: 'Project Title',
+        type: 'text',
+        maxLength: 100,
+        required: true,
+      },
+      {
+        name: 'oneLineIntro',
+        label: 'One Line Intro',
+        type: 'textarea',
+        maxLength: 200,
+      },
+      {
+        name: 'projectTypes',
+        label: 'Project Types',
+        type: 'multiselect',
+        options: projectTypes.map(type => ({ value: type.id, label: type.name })),
+      },
+      {
+        name: 'fullDescription',
+        label: 'Full Description',
+        type: 'textarea',
+        maxLength: 5000,
+      },
+    ],
+  }), [projectTypes]);
+
+  // Handle pasted AI response
+  const handlePaste = (data: any) => {
+    const updated: CreateProjectInput = {
+      ...formData,
+    };
+
+    // Map AI JSON fields to form fields
+    if (data.projectTitle) updated.title = data.projectTitle;
+    if (data.oneLineIntro) updated.intro = data.oneLineIntro;
+    if (data.fullDescription) updated.description = data.fullDescription;
+
+    // Handle project types (map names to IDs)
+    if (data.projectTypes && Array.isArray(data.projectTypes)) {
+      const typeIds = data.projectTypes
+        .map((typeName: string) => {
+          const type = projectTypes.find(t => t.name === typeName);
+          return type?.id;
+        })
+        .filter(Boolean) as string[];
+
+      updated.project_type_ids = typeIds;
+    }
+
+    // Handle new project types (create them)
+    if (data.newProjectTypes && Array.isArray(data.newProjectTypes) && data.newProjectTypes.length > 0) {
+      console.log('New project types to create:', data.newProjectTypes);
+      // TODO: Auto-create new types or show modal
+      alert(`New project types detected: ${data.newProjectTypes.join(', ')}\nYou can create these manually using the "+ New Type" button.`);
+    }
+
+    setFormData(updated);
+  };
+
   return (
     <div className="rounded-lg border bg-card">
       {/* Section Header */}
@@ -177,7 +245,17 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
           )}
 
           {/* Create Form */}
-          <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
+          <div className="space-y-3">
+            {/* Form Header with Copy & Paste Buttons */}
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-muted-foreground">Create New Project</h4>
+              <div className="flex gap-2">
+                <CopyFormPromptButton config={formPromptConfig} />
+                <PasteFormButton config={formPromptConfig} onPaste={handlePaste} />
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded border bg-accent">
             <div>
               <label className="block text-sm font-medium mb-1">
                 Project Title <span className="text-destructive">*</span> <span className="text-muted-foreground font-normal">(max 100)</span>
@@ -323,6 +401,7 @@ export function ProjectSection({ noteId, noteModifiedDate }: ProjectSectionProps
               </button>
             </div>
           </form>
+          </div>
         </div>
       )}
 
